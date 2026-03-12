@@ -239,11 +239,11 @@
      Factors are in flower-inner local space (×0.6 on screen).
      Shadows drift away from the cursor; highlights toward it. */
   const PARALLAX = [
-    { el: document.getElementById('layer-shadow-shadow'),     factor: -0.13  },
-    { el: document.getElementById('layer-shadow-colorburn'),  factor: -0.09  },
-    { el: document.getElementById('layer-boldaccent'),        factor: -0.07  },
-    { el: document.getElementById('layer-highlight-overlay'), factor:  0.10  },
-    { el: document.getElementById('layer-highlight-screen'),  factor:  0.14  },
+    { el: document.getElementById('layer-shadow-shadow'),     factor: -0.26  },
+    { el: document.getElementById('layer-shadow-colorburn'),  factor: -0.18  },
+    { el: document.getElementById('layer-boldaccent'),        factor: -0.14  },
+    { el: document.getElementById('layer-highlight-overlay'), factor:  0.20  },
+    { el: document.getElementById('layer-highlight-screen'),  factor:  0.28  },
   ];
   const LERP = 0.055;
   let mouseX = 0, mouseY = 0; // target: mouse offset from flower center (screen px)
@@ -260,6 +260,17 @@
     const cy = wr.top  - sr.top  + wr.height / 2;
     mouseX = e.clientX - sr.left - cx;
     mouseY = e.clientY - sr.top  - cy;
+  });
+
+  let mouseLeaveTimer = null;
+  document.addEventListener('mouseleave', () => {
+    mouseLeaveTimer = setTimeout(() => {
+      mouseX = 0;
+      mouseY = 0;
+    }, 600);
+  });
+  document.addEventListener('mouseenter', () => {
+    clearTimeout(mouseLeaveTimer);
   });
 
   const ICON_SRC = {
@@ -398,14 +409,14 @@
     wrapper.style.transform = `translateY(-50%) translate(${flowerOffX}px, ${flowerOffY}px) rotate(${tilt}deg)`;
 
     // ── Body 3D tilt — shadows/highlights wrap the form ──────
-    const BODY_MAX_TILT = 14;
+    const BODY_MAX_TILT = 22;
     const bodyTiltX =  Math.max(-BODY_MAX_TILT, Math.min(BODY_MAX_TILT, lerpX / 280 * BODY_MAX_TILT));
     const bodyTiltY = -Math.max(-BODY_MAX_TILT, Math.min(BODY_MAX_TILT, lerpY / 280 * BODY_MAX_TILT));
     bodyGroup.style.transform = `perspective(380px) rotateY(${bodyTiltX}deg) rotateX(${bodyTiltY}deg)`;
 
     // ── Face gaze — translates + tilts toward cursor ─────────
-    const MAX_TILT  = 22;
-    const MAX_SHIFT = 18; // px nudge toward cursor
+    const MAX_TILT  = 38;
+    const MAX_SHIFT = 28; // px nudge toward cursor
     const tiltX  =  Math.max(-MAX_TILT,  Math.min(MAX_TILT,  lerpX / 280 * MAX_TILT));
     const tiltY  = -Math.max(-MAX_TILT,  Math.min(MAX_TILT,  lerpY / 280 * MAX_TILT));
     const shiftX =  Math.max(-MAX_SHIFT, Math.min(MAX_SHIFT, lerpX / 280 * MAX_SHIFT));
