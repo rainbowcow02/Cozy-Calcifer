@@ -170,24 +170,24 @@
              style="left:0;top:0;width:342px;height:326px;" alt="">
 
         <img id="layer-shadow-colorburn" src="assets/Cozy_Vibe-shadow-colorburn 1 [Vectorized].svg"
-             style="left:11px;top:106px;width:281px;height:215px;mix-blend-mode:multiply;" alt="">
+             style="left:11px;top:106px;width:281px;height:215px;mix-blend-mode:color-burn;" alt="">
 
         <img id="layer-shadow-shadow" src="assets/Cozy_Vibe-shadow-shadow 1 [Vectorized].svg"
-             style="left:0;top:71px;width:224px;height:255px;mix-blend-mode:multiply;" alt="">
+             style="left:0;top:71px;width:224px;height:255px;mix-blend-mode:darken;" alt="">
 
         <img id="layer-boldaccent" src="assets/Cozy_Vibe-boldaccent-multiply 1 [Vectorized].svg"
              style="left:58px;top:50px;width:281px;height:246px;mix-blend-mode:multiply;" alt="">
 
         <img id="layer-highlight-overlay" src="assets/Cozy_Vibe-highlight-overlay 1 [Vectorized].svg"
-             style="left:171px;top:35px;width:171px;height:149px;mix-blend-mode:overlay;" alt="">
+             style="left:171px;top:35px;width:171px;height:149px;mix-blend-mode:overlay;opacity:0.85;" alt="">
 
         <img id="layer-highlight-screen" src="assets/Cozy_Vibe-highlight-screen 1 [Vectorized].svg"
-             style="left:158px;top:22px;width:167px;height:121px;mix-blend-mode:screen;" alt="">
+             style="left:158px;top:22px;width:167px;height:121px;mix-blend-mode:screen;opacity:0.9;" alt="">
       </div>
 
       <!-- ── face (top) ── -->
 
-      <img src="assets/Cozy_Vibe-face 1 [Vectorized].svg"
+      <img id="flower-face" src="assets/Cozy_Vibe-face 1 [Vectorized].svg"
            style="left:130px;top:169px;width:275px;height:182px;" alt="">
 
     </div>
@@ -229,19 +229,21 @@
 </div>
 
 <script>
-  const overlay = document.getElementById('particle-overlay');
-  const scene   = document.getElementById('scene');
-  const wrapper = document.getElementById('flower-wrapper');
+  const overlay   = document.getElementById('particle-overlay');
+  const faceEl    = document.getElementById('flower-face');
+  const bodyGroup = document.getElementById('body-group');
+  const scene     = document.getElementById('scene');
+  const wrapper   = document.getElementById('flower-wrapper');
 
   /* ── Parallax shadow/highlight layers ───────────────────
      Factors are in flower-inner local space (×0.6 on screen).
      Shadows drift away from the cursor; highlights toward it. */
   const PARALLAX = [
-    { el: document.getElementById('layer-shadow-shadow'),     factor: -0.055 },
-    { el: document.getElementById('layer-shadow-colorburn'),  factor: -0.038 },
-    { el: document.getElementById('layer-boldaccent'),        factor: -0.028 },
-    { el: document.getElementById('layer-highlight-overlay'), factor:  0.044 },
-    { el: document.getElementById('layer-highlight-screen'),  factor:  0.062 },
+    { el: document.getElementById('layer-shadow-shadow'),     factor: -0.13  },
+    { el: document.getElementById('layer-shadow-colorburn'),  factor: -0.09  },
+    { el: document.getElementById('layer-boldaccent'),        factor: -0.07  },
+    { el: document.getElementById('layer-highlight-overlay'), factor:  0.10  },
+    { el: document.getElementById('layer-highlight-screen'),  factor:  0.14  },
   ];
   const LERP = 0.055;
   let mouseX = 0, mouseY = 0; // target: mouse offset from flower center (screen px)
@@ -394,6 +396,22 @@
     flowerOffX += (floatX + driftX - flowerOffX) * 0.038;
     flowerOffY += (floatY + driftY - flowerOffY) * 0.038;
     wrapper.style.transform = `translateY(-50%) translate(${flowerOffX}px, ${flowerOffY}px) rotate(${tilt}deg)`;
+
+    // ── Body 3D tilt — shadows/highlights wrap the form ──────
+    const BODY_MAX_TILT = 14;
+    const bodyTiltX =  Math.max(-BODY_MAX_TILT, Math.min(BODY_MAX_TILT, lerpX / 280 * BODY_MAX_TILT));
+    const bodyTiltY = -Math.max(-BODY_MAX_TILT, Math.min(BODY_MAX_TILT, lerpY / 280 * BODY_MAX_TILT));
+    bodyGroup.style.transform = `perspective(380px) rotateY(${bodyTiltX}deg) rotateX(${bodyTiltY}deg)`;
+
+    // ── Face gaze — translates + tilts toward cursor ─────────
+    const MAX_TILT  = 22;
+    const MAX_SHIFT = 18; // px nudge toward cursor
+    const tiltX  =  Math.max(-MAX_TILT,  Math.min(MAX_TILT,  lerpX / 280 * MAX_TILT));
+    const tiltY  = -Math.max(-MAX_TILT,  Math.min(MAX_TILT,  lerpY / 280 * MAX_TILT));
+    const shiftX =  Math.max(-MAX_SHIFT, Math.min(MAX_SHIFT, lerpX / 280 * MAX_SHIFT));
+    const shiftY =  Math.max(-MAX_SHIFT, Math.min(MAX_SHIFT, lerpY / 280 * MAX_SHIFT));
+    // translate first (screen space), then tilt in 3D
+    faceEl.style.transform = `translate(${shiftX}px, ${shiftY}px) perspective(320px) rotateY(${tiltX}deg) rotateX(${tiltY}deg)`;
 
     const fc = flowerCenter();
     for (const p of particles) p.update(fc);
