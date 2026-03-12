@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cozy Flower</title>
+  <style>
+    :root {
+      --navy:        #1B2461;
+      --periwinkle:  #7B8FD6;
+      --soft-peri:   #9AA5D8;
+      --peach:       #F4A896;
+      --pale-yellow: #F5D878;
+      --gold-yellow: #F0C040;
+      --lav-gray:    #C4C8DC;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      background-color: #FAFBFF;
+      background-image:
+        linear-gradient(rgba(180, 190, 220, 0.32) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(180, 190, 220, 0.32) 1px, transparent 1px);
+      background-size: 32px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* ── Scene ─────────────────────────────────────────── */
+    #scene {
+      position: relative;
+      width: clamp(600px, 90vw, 960px);
+      height: clamp(400px, 75vh, 600px);
+    }
+
+    /* ── Flower ─────────────────────────────────────────── */
+    #flower-wrapper {
+      position: absolute;
+      left: 7%;
+      top: 50%;
+      transform: translateY(-50%);
+      width: clamp(220px, 30vw, 320px);
+      height: clamp(220px, 30vw, 320px);
+    }
+
+    /* ── Buttons ─────────────────────────────────────────── */
+    .buttons-col {
+      position: absolute;
+      right: 7%;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sparkle-btn {
+      width: 74px;
+      height: 74px;
+      border: 2.5px solid var(--pale-yellow);
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+      outline: none;
+    }
+    .sparkle-btn:hover  { background: rgba(245,216,120,.10); transform: scale(1.07); }
+    .sparkle-btn:active { transform: scale(0.93); }
+    .sparkle-btn.lit    {
+      background: rgba(245,216,120,.16);
+      box-shadow: 0 0 12px rgba(240,192,64,.35);
+    }
+    .sparkle-btn svg { width: 40px; height: 40px; display: block; }
+  </style>
+</head>
+<body>
+
+<div id="scene">
+
+  <!-- ── Flower character ──────────────────────────────── -->
+  <div id="flower-wrapper">
+    <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" overflow="visible">
+      <defs>
+        <radialGradient id="faceGrad" cx="42%" cy="36%" r="65%">
+          <stop offset="0%"   stop-color="#F8ED9A"/>
+          <stop offset="35%"  stop-color="#F5D878"/>
+          <stop offset="72%"  stop-color="#F0C040"/>
+          <stop offset="100%" stop-color="#E8A820"/>
+        </radialGradient>
+        <radialGradient id="shineGrad" cx="34%" cy="28%" r="52%">
+          <stop offset="0%"   stop-color="white" stop-opacity=".78"/>
+          <stop offset="55%"  stop-color="white" stop-opacity=".12"/>
+          <stop offset="100%" stop-color="white" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="blur1"><feGaussianBlur stdDeviation="1.8"/></filter>
+        <filter id="blur3"><feGaussianBlur stdDeviation="3"/></filter>
+      </defs>
+
+      <!-- Outer scalloped cloud ring -->
+      <circle cx="150" cy="30"  r="33" fill="#9AA5D8" opacity=".76"/>
+      <circle cx="183" cy="40"  r="32" fill="#8B96CE" opacity=".75"/>
+      <circle cx="213" cy="61"  r="32" fill="#9AA5D8" opacity=".74"/>
+      <circle cx="233" cy="90"  r="32" fill="#8B96CE" opacity=".72"/>
+      <circle cx="242" cy="125" r="32" fill="#9AA5D8" opacity=".71"/>
+      <circle cx="239" cy="161" r="32" fill="#8B96CE" opacity=".71"/>
+      <circle cx="223" cy="194" r="32" fill="#9AA5D8" opacity=".72"/>
+      <circle cx="197" cy="220" r="32" fill="#8B96CE" opacity=".74"/>
+      <circle cx="165" cy="233" r="32" fill="#9AA5D8" opacity=".76"/>
+      <circle cx="131" cy="231" r="32" fill="#8B96CE" opacity=".76"/>
+      <circle cx="100" cy="217" r="32" fill="#9AA5D8" opacity=".74"/>
+      <circle cx="75"  cy="193" r="32" fill="#8B96CE" opacity=".72"/>
+      <circle cx="58"  cy="161" r="32" fill="#9AA5D8" opacity=".71"/>
+      <circle cx="55"  cy="126" r="32" fill="#8B96CE" opacity=".71"/>
+      <circle cx="61"  cy="92"  r="32" fill="#9AA5D8" opacity=".72"/>
+      <circle cx="80"  cy="63"  r="32" fill="#8B96CE" opacity=".74"/>
+      <circle cx="112" cy="43"  r="32" fill="#9AA5D8" opacity=".76"/>
+
+      <!-- Soft inner glow of cloud ring -->
+      <circle cx="150" cy="150" r="106" fill="#C4C8DC" opacity=".20"/>
+
+      <!-- White inner petals -->
+      <ellipse cx="150" cy="69"  rx="19" ry="29" fill="white" opacity=".93"/>
+      <ellipse cx="211" cy="89"  rx="19" ry="29" fill="white" opacity=".93" transform="rotate(45 211 89)"/>
+      <ellipse cx="232" cy="150" rx="19" ry="29" fill="white" opacity=".93" transform="rotate(90 232 150)"/>
+      <ellipse cx="211" cy="211" rx="19" ry="29" fill="white" opacity=".93" transform="rotate(135 211 211)"/>
+      <ellipse cx="150" cy="232" rx="19" ry="29" fill="white" opacity=".93" transform="rotate(180 150 232)"/>
+      <ellipse cx="89"  cy="211" rx="19" ry="29" fill="white" opacity=".93" transform="rotate(225 89 211)"/>
+      <ellipse cx="68"  cy="150" rx="19" ry="29" fill="white" opacity=".93" transform="rotate(270 68 150)"/>
+      <ellipse cx="89"  cy="89"  rx="19" ry="29" fill="white" opacity=".93" transform="rotate(315 89 89)"/>
+
+      <!-- Main face -->
+      <circle cx="150" cy="150" r="77" fill="url(#faceGrad)"/>
+
+      <!-- Peach lower-face blush/shading -->
+      <ellipse cx="152" cy="176" rx="52" ry="44" fill="#F4A896" opacity=".28" filter="url(#blur3)"/>
+
+      <!-- Shine overlay -->
+      <circle cx="150" cy="150" r="77" fill="url(#shineGrad)"/>
+
+      <!-- Left eye -->
+      <ellipse cx="127" cy="150" rx="13" ry="15.5" fill="#1B2461"/>
+      <ellipse cx="123" cy="144" rx="5"  ry="4"    fill="white" opacity=".5"/>
+
+      <!-- Right eye -->
+      <ellipse cx="173" cy="148" rx="13" ry="15.5" fill="#1B2461"/>
+      <ellipse cx="169" cy="142" rx="5"  ry="4"    fill="white" opacity=".5"/>
+
+      <!-- Smile -->
+      <path d="M137 170 Q150 183 163 171" stroke="#1B2461" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+
+      <!-- Cheek blush -->
+      <ellipse cx="107" cy="167" rx="15" ry="9" fill="#F4A896" opacity=".44" filter="url(#blur1)"/>
+      <ellipse cx="194" cy="165" rx="15" ry="9" fill="#F4A896" opacity=".44" filter="url(#blur1)"/>
+    </svg>
+  </div>
+
+  <!-- ── Button column ──────────────────────────────── -->
+  <div class="buttons-col">
+
+    <!-- 1 · Heart -->
+    <button class="sparkle-btn" data-type="heart" aria-label="heart sparkles">
+      <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 33C20 33 5 22 5 12.5C5 7.8 8.8 4 13.5 4C16.2 4 18.6 5.4 20 7.6C21.4 5.4 23.8 4 26.5 4C31.2 4 35 7.8 35 12.5C35 22 20 33 20 33Z"
+              fill="#F5D878"/>
+      </svg>
+    </button>
+
+    <!-- 2 · 4-point sparkle outline -->
+    <button class="sparkle-btn" data-type="sparkle-outline" aria-label="sparkle outline">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 3 L21.6 18.4 L37 20 L21.6 21.6 L20 37 L18.4 21.6 L3 20 L18.4 18.4 Z"
+              stroke="#F5D878" stroke-width="1.9" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <!-- 3 · 4-point sparkle solid -->
+    <button class="sparkle-btn" data-type="sparkle-solid" aria-label="sparkle solid">
+      <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 2 L23.2 16.8 L38 20 L23.2 23.2 L20 38 L16.8 23.2 L2 20 L16.8 16.8 Z"
+              fill="#F0C040"/>
+      </svg>
+    </button>
+
+    <!-- 4 · Swirl / cursive loop -->
+    <button class="sparkle-btn" data-type="swirl" aria-label="swirl sparkles">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M29 10 C26 5.5 19 6 15.5 10.5 C11 16 13 24 18.5 26.5 C24 29 29.5 25 28.5 19.5 C27.5 14 22 13 20 16.5 C18 20 20 25 24.5 25"
+              stroke="#F5D878" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <!-- 5 · Symbols (dot · x · □) -->
+    <button class="sparkle-btn" data-type="symbols" aria-label="symbol sparkles">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="20" cy="12" r="3.2" fill="#F5D878"/>
+        <line x1="10" y1="24" x2="17" y2="31" stroke="#F5D878" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="17" y1="24" x2="10" y2="31" stroke="#F5D878" stroke-width="2.2" stroke-linecap="round"/>
+        <rect x="22" y="24" width="9" height="9" stroke="#F5D878" stroke-width="2" rx="1"/>
+      </svg>
+    </button>
+
+  </div>
+</div>
+
+<script>
+  /* ── Palette (only these colors used for particles) ────────── */
+  const PALETTE = [
+    '#7B8FD6', // periwinkle
+    '#9AA5D8', // soft periwinkle
+    '#F4A896', // peach
+    '#F5D878', // pale yellow
+    '#F0C040', // gold yellow
+    '#C4C8DC', // lavender gray
+    '#1B2461', // navy (accent)
+  ];
+
+  /* ── Particle SVG templates ───────────────────────────────── */
+  function makeSVG(type, size, col) {
+    const h = `<svg width="${size}" height="${size}" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"`;
+    const hf = `${h} fill="none">`;
+    switch (type) {
+      case 'heart':
+        return `${h}>
+          <path d="M20 32C20 32 6 22 6 12.8C6 8.2 9.6 4.5 14.2 4.5C16.8 4.5 19 5.8 20 7.8C21 5.8 23.2 4.5 25.8 4.5C30.4 4.5 34 8.2 34 12.8C34 22 20 32 20 32Z" fill="${col}"/>
+        </svg>`;
+
+      case 'sparkle-outline':
+        return `${hf}
+          <path d="M20 3L21.7 18.3L37 20L21.7 21.7L20 37L18.3 21.7L3 20L18.3 18.3Z" stroke="${col}" stroke-width="2.2" stroke-linejoin="round"/>
+        </svg>`;
+
+      case 'sparkle-solid':
+        return `${h}>
+          <path d="M20 2L23.3 16.7L38 20L23.3 23.3L20 38L16.7 23.3L2 20L16.7 16.7Z" fill="${col}"/>
+        </svg>`;
+
+      case 'swirl':
+        return `${hf}
+          <path d="M29 10C26 5.5 19 6 15.5 10.5C11 16 13 24 18.5 26.5C24 29 29.5 25 28.5 19.5C27.5 14 22 13 20 16.5C18 20 20 25 24.5 25" stroke="${col}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+
+      case 'symbols': {
+        const roll = Math.random();
+        if (roll < 0.34) {
+          // dot
+          return `${h}><circle cx="20" cy="20" r="13" fill="${col}"/></svg>`;
+        } else if (roll < 0.67) {
+          // ×
+          return `${hf}
+            <line x1="9" y1="9" x2="31" y2="31" stroke="${col}" stroke-width="4" stroke-linecap="round"/>
+            <line x1="31" y1="9" x2="9" y2="31" stroke="${col}" stroke-width="4" stroke-linecap="round"/>
+          </svg>`;
+        } else {
+          // □
+          return `${hf}
+            <rect x="9" y="9" width="22" height="22" stroke="${col}" stroke-width="3.5" rx="2"/>
+          </svg>`;
+        }
+      }
+
+      default:
+        return `${h}><circle cx="20" cy="20" r="10" fill="${col}"/></svg>`;
+    }
+  }
+
+  /* ── Scene & flower references ────────────────────────────── */
+  const scene        = document.getElementById('scene');
+  const flowerEl     = document.getElementById('flower-wrapper');
+  let   fc           = { x: 0, y: 0 };   // flower center, scene-relative
+
+  function refreshCenter() {
+    const sr = scene.getBoundingClientRect();
+    const fr = flowerEl.getBoundingClientRect();
+    fc.x = fr.left - sr.left + fr.width  / 2;
+    fc.y = fr.top  - sr.top  + fr.height / 2;
+  }
+
+  /* ── Particle class ──────────────────────────────────────── */
+  class Particle {
+    constructor(type, spawnAngle) {
+      const col = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+
+      /* orbital params */
+      this.angle       = spawnAngle ?? Math.random() * Math.PI * 2;
+      this.orbitR      = 115 + Math.random() * 70;   // varies: near petal edge → further out
+      this.speed       = (0.006 + Math.random() * 0.010) * (Math.random() > .5 ? 1 : -1);
+
+      /* wobble (radial breathing) */
+      this.wobble      = Math.random() * Math.PI * 2;
+      this.wobbleHz    = 0.018 + Math.random() * 0.024;
+      this.wobbleAmp   = 10  + Math.random() * 20;
+
+      /* vertical drift (sinusoidal y-offset) */
+      this.drift       = Math.random() * Math.PI * 2;
+      this.driftHz     = 0.012 + Math.random() * 0.016;
+      this.driftAmp    = 8   + Math.random() * 14;
+
+      /* self-rotation */
+      this.spin        = Math.random() * 360;
+      this.spinRate    = (1.0 + Math.random() * 2.8) * (Math.random() > .5 ? 1 : -1);
+
+      /* scale pulse */
+      this.scalePhase  = Math.random() * Math.PI * 2;
+      this.scaleHz     = 0.022 + Math.random() * 0.02;
+      this.scaleMid    = 0.85 + Math.random() * 0.25;
+      this.scaleAmp    = 0.10 + Math.random() * 0.12;
+
+      this.opacity     = 0;
+      this.size        = 16 + Math.random() * 14;
+
+      /* DOM */
+      this.el          = document.createElement('div');
+      this.el.style.cssText =
+        'position:absolute;pointer-events:none;z-index:20;opacity:0;transform-origin:center center;';
+      this.el.innerHTML = makeSVG(type, this.size, col);
+      scene.appendChild(this.el);
+    }
+
+    update() {
+      this.angle      += this.speed;
+      this.wobble     += this.wobbleHz;
+      this.drift      += this.driftHz;
+      this.spin       += this.spinRate;
+      this.scalePhase += this.scaleHz;
+
+      /* fade in */
+      if (this.opacity < 0.90)
+        this.opacity = Math.min(0.90, this.opacity + 0.020);
+
+      const r  = this.orbitR + Math.sin(this.wobble) * this.wobbleAmp;
+      const dx = Math.sin(this.drift) * this.driftAmp;   // gentle perpendicular drift
+      const x  = fc.x + Math.cos(this.angle) * r + dx * Math.sin(this.angle + Math.PI / 2);
+      const y  = fc.y + Math.sin(this.angle) * r + dx * Math.cos(this.angle + Math.PI / 2);
+      const sc = this.scaleMid + Math.sin(this.scalePhase) * this.scaleAmp;
+
+      this.el.style.left      = `${x - this.size / 2}px`;
+      this.el.style.top       = `${y - this.size / 2}px`;
+      this.el.style.opacity   = this.opacity;
+      this.el.style.transform = `rotate(${this.spin}deg) scale(${sc})`;
+    }
+
+    destroy() { this.el.remove(); }
+  }
+
+  /* ── Pool per type ───────────────────────────────────────── */
+  const MAX_PER_TYPE = 10;
+  const pool = {};   // type → Particle[]
+  let allParticles   = [];
+
+  function spawnParticles(type) {
+    if (!pool[type]) pool[type] = [];
+    const SPAWN = 6;
+
+    for (let i = 0; i < SPAWN; i++) {
+      const angle = (i / SPAWN) * Math.PI * 2 + Math.random() * 0.5;
+      const p     = new Particle(type, angle);
+      pool[type].push(p);
+      allParticles.push(p);
+    }
+
+    /* evict oldest if over cap */
+    while (pool[type].length > MAX_PER_TYPE) {
+      const evicted = pool[type].shift();
+      evicted.destroy();
+      allParticles = allParticles.filter(p => p !== evicted);
+    }
+  }
+
+  /* ── Render loop ─────────────────────────────────────────── */
+  function tick() {
+    refreshCenter();
+    for (const p of allParticles) p.update();
+    requestAnimationFrame(tick);
+  }
+  tick();
+
+  /* ── Button wiring ───────────────────────────────────────── */
+  document.querySelectorAll('.sparkle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.add('lit');
+      spawnParticles(btn.dataset.type);
+    });
+  });
+
+  /* keep center fresh on resize */
+  window.addEventListener('resize', refreshCenter);
+</script>
+</body>
+</html>
