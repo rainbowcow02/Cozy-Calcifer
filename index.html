@@ -132,6 +132,7 @@
       user-select: none;
       -webkit-user-drag: none;
     }
+
   </style>
 </head>
 <body>
@@ -185,10 +186,29 @@
              style="left:158px;top:22px;width:167px;height:121px;mix-blend-mode:screen;opacity:0.9;" alt="">
       </div>
 
-      <!-- ── face (top) ── -->
+      <!-- ── face (top) — split into 3 slices for blink warp ── -->
+      <!-- face-group receives the gaze transform; all slices move together -->
+      <div id="face-group" style="position:absolute;left:130px;top:169px;width:275px;height:182px;">
 
-      <img id="flower-face" src="assets/Cozy_Vibe-face 1 [Vectorized].svg"
-           style="left:130px;top:169px;width:275px;height:182px;" alt="">
+        <!-- slice A: forehead / above eyes (y 0–35 of face SVG, never distorts) -->
+        <img src="assets/Cozy_Vibe-face 1 [Vectorized].svg"
+             style="left:0;top:0;width:275px;height:182px;
+                    clip-path:inset(0 0 147px 0);" alt="">
+
+        <!-- slice B: eye band (y 35–115). scaleY → 0 squishes eyes to thin slits,
+             revealing the golden body behind — no overlay color needed -->
+        <div id="eye-slice"
+             style="position:absolute;left:0;top:35px;width:275px;height:80px;
+                    overflow:hidden;transform-origin:50% 50%;">
+          <img src="assets/Cozy_Vibe-face 1 [Vectorized].svg"
+               style="left:0;top:-35px;width:275px;height:182px;" alt="">
+        </div>
+
+        <!-- slice C: mouth + chin (y 115–182, never distorts) -->
+        <img id="flower-face" src="assets/Cozy_Vibe-face 1 [Vectorized].svg"
+             style="left:0;top:0;width:275px;height:182px;
+                    clip-path:inset(115px 0 0 0);" alt="">
+      </div>
 
     </div>
   </div>
@@ -231,9 +251,11 @@
 <script>
   const overlay   = document.getElementById('particle-overlay');
   const faceEl    = document.getElementById('flower-face');
+  const faceGroup = document.getElementById('face-group');
   const bodyGroup = document.getElementById('body-group');
   const scene     = document.getElementById('scene');
   const wrapper   = document.getElementById('flower-wrapper');
+  const eyeSlice  = document.getElementById('eye-slice');
 
   /* ── Parallax shadow/highlight layers ───────────────────
      Factors are in flower-inner local space (×0.6 on screen).
@@ -248,6 +270,25 @@
   const LERP = 0.055;
   let mouseX = 0, mouseY = 0; // target: mouse offset from flower center (screen px)
   let lerpX  = 0, lerpY  = 0; // smoothed current value
+
+  /* ── Blink state machine ─────────────────────────────────
+     Phases: 'idle' → 'closing' → 'closed' → 'opening'
+     For a double-blink, after 'opening' there's a short 'gap'
+     before looping back to 'closing' once more.              */
+  const BK_CLOSE = 4;   // frames to close (~67 ms @ 60fps)
+  const BK_PAUSE = 2;   // frames held shut
+  const BK_OPEN  = 6;   // frames to reopen
+  const BK_GAP   = 8;   // frames between double-blink strokes
+  let blinkPhase  = 'idle';
+  let blinkFStart = 0;          // floatT at start of current phase
+  let nextBlink   = 200 + Math.random() * 120;  // frames until first blink
+  let extraBlink  = 0;          // 1 = one more blink pending (double)
+
+  // s: 0 = eyes open, 1 = eyes fully closed
+  // eye-slice scaleY is the inverse: 1 = open, 0 = closed (eyes squish away)
+  function setLidScale(s) {
+    eyeSlice.style.transform = `scaleY(${(1 - s).toFixed(4)})`;
+  }
 
   /* ── Flower hover + cursor drift ────────────────────────── */
   let flowerOffX = 0, flowerOffY = 0; // current translate applied to wrapper
@@ -422,7 +463,38 @@
     const shiftX =  Math.max(-MAX_SHIFT, Math.min(MAX_SHIFT, lerpX / 280 * MAX_SHIFT));
     const shiftY =  Math.max(-MAX_SHIFT, Math.min(MAX_SHIFT, lerpY / 280 * MAX_SHIFT));
     // translate first (screen space), then tilt in 3D
-    faceEl.style.transform = `translate(${shiftX}px, ${shiftY}px) perspective(320px) rotateY(${tiltX}deg) rotateX(${tiltY}deg)`;
+    // applied to face-group so eyelids inherit the same transform
+    faceGroup.style.transform = `translate(${shiftX}px, ${shiftY}px) perspective(320px) rotateY(${tiltX}deg) rotateX(${tiltY}deg)`;
+
+    // ── Blink ─────────────────────────────────────────────────
+    const bf = floatT - blinkFStart;
+    if (blinkPhase === 'idle') {
+      if (floatT >= nextBlink) {
+        blinkPhase  = 'closing';
+        blinkFStart = floatT;
+        extraBlink  = Math.random() < 0.2 ? 1 : 0;
+      }
+    } else if (blinkPhase === 'closing') {
+      setLidScale(Math.min(1, bf / BK_CLOSE));
+      if (bf >= BK_CLOSE) { blinkPhase = 'closed'; blinkFStart = floatT; }
+    } else if (blinkPhase === 'closed') {
+      if (bf >= BK_PAUSE) { blinkPhase = 'opening'; blinkFStart = floatT; }
+    } else if (blinkPhase === 'opening') {
+      setLidScale(1 - Math.min(1, bf / BK_OPEN));
+      if (bf >= BK_OPEN) {
+        setLidScale(0);
+        if (extraBlink > 0) {
+          extraBlink--;
+          blinkPhase  = 'gap';
+          blinkFStart = floatT;
+        } else {
+          blinkPhase = 'idle';
+          nextBlink  = floatT + 180 + Math.random() * 120; // 3–5 s
+        }
+      }
+    } else if (blinkPhase === 'gap') {
+      if (bf >= BK_GAP) { blinkPhase = 'closing'; blinkFStart = floatT; }
+    }
 
     const fc = flowerCenter();
     for (const p of particles) p.update(fc);
