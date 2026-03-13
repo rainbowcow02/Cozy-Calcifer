@@ -37,14 +37,12 @@ Buttons visually reflect whether their particle type is currently active (partic
 **Behavior**
 - A button appears "on" when its particles are orbiting the character
 - A button appears "off" (default state) when no particles of that type exist
-- State updates automatically as particles are spawned or expire
+- Toggle is driven directly by click — each click flips the state
 
-**Technical approach**
-- Add `activeTypes = new Set()` to track which types currently have live particles
-- Update set membership after every spawn and every FIFO removal
-- Toggle an `.active` CSS class on matching `.spark-btn` elements
-- `.spark-btn.active .btn-box`: `filter: brightness(0.85) saturate(1.3)` + subtle inset shadow
-- `.spark-btn.active`: suppress hover scale (button is already committed)
+**Technical approach (as built)**
+- `btn.classList.toggle('active')` on each `.spark-btn` click
+- `.spark-btn.active .btn-bg`: background shifts from `#8897F4` to `#12227B` (dark navy fill)
+- Active and inactive states are purely CSS-driven; no separate tracking set needed
 
 ---
 
@@ -71,20 +69,24 @@ When the cursor drifts close to the character, it squishes slightly — widening
 
 ---
 
-### 4. Reaction to Particle Spawns
+### 4. Reaction to Particle Spawns ✅ Done
 
 **What it does**
-When a button is clicked and new particles appear, the character does a quick little bounce — a brief squish-then-stretch — as if excited by the new sparkles.
+When a button is clicked, the character performs one of four expressive bounce animations in sequence, cycling with each click.
 
 **Behavior**
-- Triggered on every button click
-- Quick arc: squish down, then stretch up, then settle back to neutral
-- Duration: ~12 frames (~200ms) — punchy, not lingering
+- Triggered on every button click (toggle on or off)
+- Four states cycle in order: lean-right → lean-left → axel (forward spin) → axel-reverse (backward spin) → repeat
+- Each state has 4 phases: wind-up → launch → fall/overshoot → spring to rest
+- Right/left: ~24 frames (~400ms) — leans and tips with squash & stretch
+- Axel / axel-reverse: ~41 frames (~680ms) — dramatic wind-up, full 360° spin, clean landing
 
-**Technical approach**
-- On button click: set `bounceT = 12`
-- Each frame while `bounceT > 0`: apply `scaleY(1 - 0.07 * Math.sin(π * (1 - bounceT / 12)))` to `#flower-wrapper`
-- Decrement `bounceT` each frame; compound with breathing scale
+**Technical approach (as built)**
+- `BOUNCE_STYLES = ['right', 'left', 'axel', 'axel-reverse']` cycles via `bounceStyleIdx % 4`
+- Each style shares a 4-phase easing system (`ein`, `eout`, `eio`) applied to `sx`, `sy`, `dy`, `rot`
+- Axel styles use same arc/timing as each other; `axelDir` flips the sign of all rotation values for reverse
+- `getBounceScale()` called each frame; transform composed onto `#flower-wrapper` with float + drift
+- Face lags the body via a secondary lerp (`faceOffY`) for a subtle secondary motion feel
 
 ---
 
@@ -94,7 +96,7 @@ Refinements that add depth and visual cohesion once the core feel is solid.
 
 ---
 
-### 5. Colored Particles
+### 5. Colored Particles ✅ Done
 
 **What it does**
 Each particle type gets a thematic color from the design palette, tinting the orbiting sparkles so they feel intentional and part of the visual system.
@@ -103,15 +105,17 @@ Each particle type gets a thematic color from the design palette, tinting the or
 
 | Particle | Color | Palette var |
 |----------|-------|-------------|
-| Heart | Peach | `#F4A896` |
+| Heart | Peach/coral | `#F4A896` |
 | Star1 | Pale yellow | `#F5D878` |
-| Star2 | Gold | `#F0C040` |
+| Star2 | Rich gold | `#F0C040` |
 | Swirl | Periwinkle | `#7B8FD6` |
-| Crits | Lavender gray | `#C4C8DC` |
+| Crits | Confetti (random per shape) | `#7B8FD6`, `#F4A896`, `#F5D878`, `#F0C040`, `#C4C8DC`, `#9AA5D8` |
 
-**Technical approach**
-- Add a colored overlay `<div>` positioned over each particle `<img>`, using the type's color at ~55% opacity with `mix-blend-mode: multiply`
-- Supplement with `filter: drop-shadow(0 0 4px COLOR)` on the particle element for a soft glow
+**Technical approach (as built)**
+- All particle SVGs share a pale-yellow base fill (`#FEE69A`)
+- Color is applied via CSS `filter` on each `<img>`: `hue-rotate()` shifts hue, `brightness()` adjusts lightness
+- `PARTICLE_FILTER` map: heart `hue-rotate(323deg)`, star1 `brightness(0.94)`, star2 `brightness(0.82)`, swirl `hue-rotate(178deg) brightness(0.88)`
+- Crits particles are dynamically built SVGs — each of the 4 shapes gets a random color from `CONFETTI_COLORS` on every spawn, creating a confetti effect
 
 ---
 

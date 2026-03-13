@@ -324,51 +324,52 @@
   const BOUNCE_TOTAL_AXEL = A1 + A2 + A3 + A4;
 
   let bounceT = 0;
-  // Cycles: lean-right → lean-left → axel → repeat
-  const BOUNCE_STYLES = ['right', 'left', 'axel'];
+  // Cycles: lean-right → lean-left → axel → axel-reverse → repeat
+  const BOUNCE_STYLES = ['right', 'left', 'axel', 'axel-reverse'];
   let bounceStyleIdx = 0;
   let bounceStyle    = 'right';
 
   function triggerBounce() {
-    bounceStyle    = BOUNCE_STYLES[bounceStyleIdx % 3];
+    bounceStyle    = BOUNCE_STYLES[bounceStyleIdx % 4];
     bounceStyleIdx++;
-    bounceT = bounceStyle === 'axel' ? BOUNCE_TOTAL_AXEL : BOUNCE_TOTAL;
+    bounceT = (bounceStyle === 'axel' || bounceStyle === 'axel-reverse') ? BOUNCE_TOTAL_AXEL : BOUNCE_TOTAL;
   }
 
   function getBounceScale() {
     if (bounceT <= 0) return { sx: 1, sy: 1, dy: 0, rot: 0 };
-    const total   = bounceStyle === 'axel' ? BOUNCE_TOTAL_AXEL : BOUNCE_TOTAL;
-    const elapsed = total - bounceT;
+    const isAxel    = bounceStyle === 'axel' || bounceStyle === 'axel-reverse';
+    const axelDir   = bounceStyle === 'axel-reverse' ? -1 : 1;
+    const total     = isAxel ? BOUNCE_TOTAL_AXEL : BOUNCE_TOTAL;
+    const elapsed   = total - bounceT;
     bounceT--;
     const ein  = t => 1 - Math.cos(t * Math.PI * 0.5); // slow start → fast end
     const eout = t => Math.sin(t * Math.PI * 0.5);      // fast start → slow end
     const eio  = t => (1 - Math.cos(t * Math.PI)) * 0.5; // slow → fast → slow
     const dir  = bounceStyle === 'left' ? -1 : 1;
-    const axel = bounceStyle === 'axel';
-    const p1 = axel ? A1 : B1;
-    const p2 = axel ? A2 : B2;
-    const p3 = axel ? A3 : B3;
-    const p4 = axel ? A4 : B4;
+    const p1 = isAxel ? A1 : B1;
+    const p2 = isAxel ? A2 : B2;
+    const p3 = isAxel ? A3 : B3;
+    const p4 = isAxel ? A4 : B4;
     if (elapsed < p1) {
       // Phase 1: wind-up (axel: slow dramatic load; right/left: lean back)
       const e = ein(elapsed / p1);
       return { sx: 1 + e * 0.15, sy: 1 - e * 0.20, dy: e * 60,
-               rot: axel ? e * 10 : dir * e * 2.5 };
+               rot: isAxel ? axelDir * e * 10 : dir * e * 2.5 };
     } else if (elapsed < p1 + p2) {
       // Phase 2: launch (axel: snappy full spin; right/left: tip forward)
       const e = eout((elapsed - p1) / p2);
       return { sx: 1.15 - e * 0.30, sy: 0.80 + e * 0.42, dy: 60 - e * 160,
-               rot: axel ? 10 + e * 355 : dir * (2.5 - e * 5.5) };
+               rot: isAxel ? axelDir * (10 + e * 355) : dir * (2.5 - e * 5.5) };
     } else if (elapsed < p1 + p2 + p3) {
       // Phase 3: fall + overshoot (axel: glide to clean 360; right/left: swing back)
       const e = eout((elapsed - p1 - p2) / p3);
       return { sx: 0.85 + e * 0.20, sy: 1.22 - e * 0.27, dy: -100 + e * 108,
-               rot: axel ? 365 - e * 5 : dir * (-3 + e * 4) };
+               rot: isAxel ? axelDir * (365 - e * 5) : dir * (-3 + e * 4) };
     } else {
       // Phase 4: spring to rest (axel lands at 360° ≡ 0°, no snap)
       const e = eio((elapsed - p1 - p2 - p3) / p4);
       return { sx: 1.05 - e * 0.05, sy: 0.95 + e * 0.05, dy: 8 - e * 8,
-               rot: axel ? 360 : dir * (1 - e) };
+               rot: isAxel ? axelDir * 360 : dir * (1 - e) };
     }
   }
 
