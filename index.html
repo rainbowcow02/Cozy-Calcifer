@@ -137,6 +137,15 @@
       position: absolute;
       pointer-events: none;
       will-change: transform, opacity;
+      isolation: isolate;
+    }
+
+    .particle-color-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0.55;
+      mix-blend-mode: multiply;
+      pointer-events: none;
     }
 
     .particle img {
@@ -342,6 +351,14 @@
     crits: 'assets/Cozy_Vibe-crits 1 [Vectorized].svg',
   };
 
+  const PARTICLE_COLOR = {
+    heart: '#F4A896',
+    star1: '#F5D878',
+    star2: '#F0C040',
+    swirl: '#7B8FD6',
+    crits: '#C4C8DC',
+  };
+
   const MAX_PER_TYPE = 9;
   const particles = [];
 
@@ -381,15 +398,25 @@
       this.opacity = 0;
       this.size    = 26 + Math.random() * 20;
 
+      const color = PARTICLE_COLOR[type];
+
       this.el = document.createElement('div');
       this.el.className = 'particle';
       this.el.style.width  = `${this.size}px`;
       this.el.style.height = `${this.size}px`;
+      this.el.style.filter = `drop-shadow(0 0 4px ${color})`;
+
       const img = document.createElement('img');
       img.src = ICON_SRC[type];
       img.draggable = false;
       img.setAttribute('aria-hidden', 'true');
       this.el.appendChild(img);
+
+      const colorOverlay = document.createElement('div');
+      colorOverlay.className = 'particle-color-overlay';
+      colorOverlay.style.background = color;
+      this.el.appendChild(colorOverlay);
+
       overlay.appendChild(this.el);
     }
 

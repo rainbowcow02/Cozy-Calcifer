@@ -29,7 +29,7 @@ The character's body slowly expands and contracts, as if inhaling and exhaling.
 
 ---
 
-### 2. Button On/Off States
+### 2. Button On/Off States ✅ Done
 
 **What it does**
 Buttons visually reflect whether their particle type is currently active (particles present on screen).
