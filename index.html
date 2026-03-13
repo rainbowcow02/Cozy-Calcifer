@@ -73,6 +73,10 @@
       flex-direction: column;
       gap: 10px;
       align-items: center;
+      background: #8897F4;
+      border-radius: 36px;
+      padding: 12px 10px;
+      z-index: 10;
     }
 
     .spark-btn {
@@ -88,6 +92,17 @@
     }
     .spark-btn:hover  { transform: scale(1.10) rotate(-3deg); }
     .spark-btn:active { transform: scale(0.93) rotate(2deg); }
+
+    .btn-bg {
+      position: absolute;
+      inset: 12px 12px 7px 10px;
+      border-radius: 5px;
+      background: #8897F4;
+      transition: background 0.18s ease;
+    }
+    .spark-btn.active .btn-bg {
+      background: #12227B;
+    }
 
     .spark-btn .btn-box {
       position: absolute;
@@ -217,26 +232,31 @@
   <div id="controls">
 
     <button class="spark-btn" data-type="heart">
+      <div class="btn-bg"></div>
       <img class="btn-box"  src="assets/Cozy_Vibe-box 1 [Vectorized].svg"   alt="">
       <img class="btn-icon" src="assets/Cozy_Vibe-heart 1 [Vectorized].svg" alt="heart">
     </button>
 
     <button class="spark-btn" data-type="star1">
+      <div class="btn-bg"></div>
       <img class="btn-box"  src="assets/Cozy_Vibe-box 1 [Vectorized].svg"   alt="">
       <img class="btn-icon" src="assets/Cozy_Vibe-star1 1 [Vectorized].svg" alt="sparkle">
     </button>
 
     <button class="spark-btn" data-type="star2">
+      <div class="btn-bg"></div>
       <img class="btn-box"  src="assets/Cozy_Vibe-box 1 [Vectorized].svg"   alt="">
       <img class="btn-icon" src="assets/Cozy_Vibe-star2 1 [Vectorized].svg" alt="star">
     </button>
 
     <button class="spark-btn" data-type="swirl">
+      <div class="btn-bg"></div>
       <img class="btn-box"  src="assets/Cozy_Vibe-box 1 [Vectorized].svg"   alt="">
       <img class="btn-icon" src="assets/Cozy_Vibe-swirl 1 [Vectorized].svg" alt="swirl">
     </button>
 
     <button class="spark-btn" data-type="crits">
+      <div class="btn-bg"></div>
       <img class="btn-box"  src="assets/Cozy_Vibe-box 1 [Vectorized].svg"   alt="">
       <img class="btn-icon" src="assets/Cozy_Vibe-crits 1 [Vectorized].svg" alt="crits">
     </button>
@@ -380,8 +400,12 @@
       this.spin       += this.spinRate;
       this.scalePhase += this.scaleHz;
 
-      if (this.opacity < 0.90)
+      if (this.dying) {
+        this.opacity = Math.max(0, this.opacity - 0.04);
+        if (this.opacity <= 0) return 'remove';
+      } else if (this.opacity < 0.90) {
         this.opacity = Math.min(0.90, this.opacity + 0.017);
+      }
 
       const r  = this.orbitR + Math.sin(this.wobble) * this.wobbleAmp;
       const dx = Math.sin(this.drift) * this.driftAmp;
@@ -399,14 +423,11 @@
   }
 
   function spawnParticles(type) {
-    const existing = particles.filter(p => p.type === type);
+    const existing = particles.filter(p => p.type === type && !p.dying);
 
     if (existing.length >= MAX_PER_TYPE) {
       const trim = existing.slice(0, 2);
-      trim.forEach(p => {
-        particles.splice(particles.indexOf(p), 1);
-        p.destroy();
-      });
+      trim.forEach(p => { p.dying = true; });
     }
 
     const count  = 2 + Math.floor(Math.random() * 2);
@@ -417,8 +438,19 @@
     }
   }
 
+  function killParticles(type) {
+    particles.filter(p => p.type === type).forEach(p => { p.dying = true; });
+  }
+
   document.querySelectorAll('.spark-btn').forEach(btn => {
-    btn.addEventListener('click', () => spawnParticles(btn.dataset.type));
+    btn.addEventListener('click', () => {
+      const isActive = btn.classList.toggle('active');
+      if (isActive) {
+        spawnParticles(btn.dataset.type);
+      } else {
+        killParticles(btn.dataset.type);
+      }
+    });
   });
 
   function loop() {
@@ -497,7 +529,12 @@
     }
 
     const fc = flowerCenter();
-    for (const p of particles) p.update(fc);
+    for (let i = particles.length - 1; i >= 0; i--) {
+      if (particles[i].update(fc) === 'remove') {
+        particles[i].destroy();
+        particles.splice(i, 1);
+      }
+    }
     requestAnimationFrame(loop);
   }
   loop();
