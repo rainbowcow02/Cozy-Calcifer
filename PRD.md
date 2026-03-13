@@ -136,6 +136,56 @@ The petals (scalloped edge layer) oscillate on their own slow frequency, as if c
 
 ---
 
+---
+
+## Opportunity — Desktop Companion
+
+The next major evolution: transform Cozy Calcifer from an animated browser character into a living desktop companion. Inspired by the Digimon concept of a personal digital friend who is always with you — not a productivity tool, but a *presence* that makes working feel less lonely.
+
+---
+
+### Vision
+
+A floating, always-visible companion who lives in the corner of your Mac screen. Transparent window, never blocking your work. It feels alive because it already is — the animations, personality, and reactivity already exist. The goal is to make it *real* by getting it off the browser and onto your desktop.
+
+---
+
+### Core pillars
+
+**1. Desktop presence**
+- Electron app: transparent, frameless, always-on-top Mac window
+- Lives in a corner of the screen, never in the way
+- Accessible at a glance without switching apps or tabs
+
+**2. Speech bubbles — on demand, not intrusive**
+- Hover over the character to reveal a small prompt menu
+- Prompts include: Motivate me, Make me laugh, I need a pep talk, etc.
+- Character responds in its own voice — an inspiring quote, a warm nudge, a dry joke
+- Personality-driven: the character has a consistent tone and sense of humor
+
+**3. Activity states with props**
+- The character visually reflects what you're both doing together
+- States: working (tiny laptop), reading (open book), writing (notebook + pencil), on a break (steamy mug)
+- Props are custom SVGs in the same painterly style as the existing character art
+- State change is triggered intentionally — you tell your companion what you're doing
+- Animations subtly shift per state (more settled on break, more alert while working)
+
+**4. Body doubling for ADHD**
+- The core emotional value: not feeling alone while you work
+- The companion is *with* you — present, engaged, in the same state as you
+- Celebrates wins (bounce animations + confetti already exist for this)
+- Gentle presence during hard stretches — no nagging, just company
+
+---
+
+### Open questions to resolve
+- What is the character's name and defined personality/voice?
+- How are activity states triggered — manual selection, or automatic detection?
+- How frequently can speech bubbles be requested before they feel cheap?
+- What prompt categories make the most sense to start with?
+
+---
+
 ## Out of Scope
 
 - New character parts or SVG assets
