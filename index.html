@@ -137,15 +137,6 @@
       position: absolute;
       pointer-events: none;
       will-change: transform, opacity;
-      isolation: isolate;
-    }
-
-    .particle-color-overlay {
-      position: absolute;
-      inset: 0;
-      opacity: 0.55;
-      mix-blend-mode: multiply;
-      pointer-events: none;
     }
 
     .particle img {
@@ -319,9 +310,42 @@
     eyeSlice.style.transform = `scaleY(${(1 - s).toFixed(4)})`;
   }
 
+  /* ── Reaction bounce ────────────────────────────────────────
+     Triggered on every spark-btn click.
+     Phase 1 ( 7 frames / 0.12s): squish + sink  60px down
+     Phase 2 (14 frames / 0.23s): stretch + shoot 100px up
+     Phase 3 ( 9 frames / 0.15s): drift back to rest          */
+  const B1 = 7, B2 = 14, B3 = 9;
+  const BOUNCE_TOTAL = B1 + B2 + B3;
+  let bounceT = 0;
+
+  function triggerBounce() { bounceT = BOUNCE_TOTAL; }
+
+  function getBounceScale() {
+    if (bounceT <= 0) return { sx: 1, sy: 1, dy: 0 };
+    const elapsed = BOUNCE_TOTAL - bounceT;
+    bounceT--;
+    const ein  = t => 1 - Math.cos(t * Math.PI * 0.5); // slow start → fast end
+    const eout = t => Math.sin(t * Math.PI * 0.5);      // fast start → slow end
+    if (elapsed < B1) {
+      // Phase 1: ease-in — hesitant wind-up that snaps into the dip
+      const e = ein(elapsed / B1);
+      return { sx: 1 + e * 0.15, sy: 1 - e * 0.20, dy: e * 60 };
+    } else if (elapsed < B1 + B2) {
+      // Phase 2: ease-out — explosive launch, gravity bleeds off speed
+      const e = eout((elapsed - B1) / B2);
+      return { sx: 1.15 - e * 0.30, sy: 0.80 + e * 0.42, dy: 60 - e * 160 };
+    } else {
+      // Phase 3: ease-out — gravity snaps it back, drifts softly to rest
+      const e = eout((elapsed - B1 - B2) / B3);
+      return { sx: 0.85 + e * 0.15, sy: 1.22 - e * 0.22, dy: -100 + e * 100 };
+    }
+  }
+
   /* ── Flower hover + cursor drift ────────────────────────── */
   let flowerOffX = 0, flowerOffY = 0; // current translate applied to wrapper
   let floatT     = 0;
+  let faceOffY   = 0; // secondary motion: face lags behind the bounce
 
   document.addEventListener('mousemove', e => {
     const sr = scene.getBoundingClientRect();
@@ -351,13 +375,43 @@
     crits: 'assets/Cozy_Vibe-crits 1 [Vectorized].svg',
   };
 
-  const PARTICLE_COLOR = {
-    heart: '#F4A896',
-    star1: '#F5D878',
-    star2: '#F0C040',
-    swirl: '#7B8FD6',
-    crits: '#C4C8DC',
+  // All particle SVGs share the same base pale-yellow fill (#FEE69A, S=98%).
+  // hue-rotate shifts the hue; brightness adjusts for palette colors darker than the base.
+  // Saturation is kept at full to avoid dullness.
+  const PARTICLE_FILTER = {
+    heart: 'hue-rotate(323deg)',                  // → vivid peach/coral
+    star1: 'brightness(0.94)',                     // → bright pale yellow
+    star2: 'brightness(0.82)',                     // → rich gold
+    swirl: 'hue-rotate(178deg) brightness(0.88)', // → vivid periwinkle
   };
+
+  // Crits: each of the 4 shapes gets a random palette color (confetti).
+  const CONFETTI_COLORS = ['#7B8FD6', '#F4A896', '#F5D878', '#F0C040', '#C4C8DC', '#9AA5D8'];
+  const CRITS_PATHS = [
+    // box
+    'M120.889 99.57C125.055 98.9733 130.075 100.306 134.17 101.085C141.942 102.597 149.682 104.264 157.387 106.086C162.246 107.191 167.214 107.861 171.944 109.445C179.836 112.088 177.135 118.686 175.38 124.332L172.027 135.077L166.055 154.185C164.891 157.932 163.828 161.971 162.463 165.626C162.373 165.869 162.271 166.107 162.156 166.339C160.225 170.239 157.558 169.87 153.785 169.078C150.727 168.435 147.683 167.214 144.66 166.372L125.227 160.761C120.725 159.42 114.03 157.973 110.602 154.757C109.46 153.685 109.432 148.719 109.623 147.116C109.913 144.67 110.531 142.338 110.958 139.904C113.005 128.235 115.561 116.635 117.69 104.972C118.005 103.244 119.043 100.084 120.889 99.57ZM125.973 146.222C129.978 147.836 135.369 148.755 139.572 150.194C140.882 150.642 148.166 152.914 148.968 152.958C149.506 152.411 149.893 150.792 150.154 149.955C152.497 140.952 155.844 131.75 158.53 122.817C158.762 122.046 159.032 121.253 159.368 120.521C155.127 120.036 152.104 119.228 147.964 118.34C142.924 117.259 137.107 116.334 132.147 115.14C131.326 117.212 131.341 121.015 130.807 123.322C129.066 130.838 128.019 138.8 125.973 146.222Z',
+    // X
+    'M45.238 124.907C46.4375 124.999 47.5206 125.387 48.7022 125.585C49.6116 125.738 50.4228 124.874 51.2193 125.518C53.3186 127.215 54.0565 129.984 55.4079 132.222C57.3397 135.421 59.3197 137.713 60.1241 141.443C60.6872 140.782 61.3355 140.144 62.0664 139.666C65.8102 137.104 68.8289 134.101 72.6678 131.662C76.2638 129.378 77.5008 131.365 80.3501 129.916C82.2003 130.098 87.6784 131.251 87.6968 133.617C87.0003 134.631 86.797 133.574 85.7037 134.613C85.419 135.788 87.0085 136.452 87.4908 137.571C89.8507 143.376 82.1581 144.608 79.1403 146.638C75.2199 149.274 72.1317 151.393 67.9664 153.65C68.1685 154.149 68.4123 154.758 68.7401 155.178C70.7924 157.808 72.3808 160.692 73.9826 163.606C75.1597 165.748 76.3872 167.885 77.4947 170.068C78.3848 171.823 78.9323 173.618 79.8765 175.348L79.7536 175.726C79.2517 176.498 79.0761 176.79 78.7244 177.634C78.9556 178.473 79.5882 177.885 79.9913 178.789C79.4396 179.676 77.5631 181.316 76.6513 181.692C66.2154 185.994 64.5668 174.708 61.1195 168.1C59.67 165.322 58.1428 163.216 56.8445 160.672C49.4003 164.843 43.982 172.828 35.8857 166.348C32.9884 164.029 34.5824 162.777 33.9309 159.482C35.9467 156.183 39.3697 153.892 42.8462 152.314C46.0197 152.623 44.6286 152.071 46.3825 149.998C46.5373 149.815 49.2357 148.382 49.892 147.876C48.9633 146.396 48.1632 144.343 47.3379 142.771C45.1278 138.563 40.1285 128.788 45.238 124.907Z',
+    // circle
+    'M59.5274 54.2341C70.0955 52.9015 81.1611 61.3719 83.9061 71.2475C85.7438 77.8585 81.8823 86.0497 76.9814 90.3971C73.1436 93.8016 72.4625 94.7088 67.266 95.7285C59.5441 97.2746 44.2861 91.1486 42.8671 82.5361C41.7512 75.7628 43.695 67.2184 47.2164 61.3598C49.8202 57.0276 54.8299 55.1546 59.5274 54.2341Z',
+    // dash
+    'M167.383 28.4719C170.338 28.8148 174.246 30.3983 176.586 32.301C177.126 32.7395 177.582 33.8016 178.896 34.8804L178.304 36.0533C178.413 37.0593 178.672 36.6834 179.034 37.4465C180.242 39.2016 177.367 41.0728 177.272 41.8973C177.028 44.0272 177.292 44.3411 174.917 45.8419C169.451 49.2968 163.642 52.473 157.939 55.559C153.037 58.2111 148.257 61.3087 143.384 64.0395C139.526 66.2116 134.954 68.4609 131.265 70.8545C130.52 71.2718 129.353 71.7656 128.551 72.1348C121.89 68.6479 115.651 64.8297 122.087 56.5549C124.278 53.7387 129.419 51.3704 132.531 49.3982L153.39 36.4108C157.413 33.8634 162.622 28.998 167.383 28.4719Z',
+  ];
+
+  function makeCritsSvg() {
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 213 194');
+    svg.setAttribute('fill', 'none');
+    svg.style.cssText = 'width:100%;height:100%;';
+    CRITS_PATHS.forEach(d => {
+      const path = document.createElementNS(NS, 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('fill', CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]);
+      svg.appendChild(path);
+    });
+    return svg;
+  }
 
   const MAX_PER_TYPE = 9;
   const particles = [];
@@ -398,24 +452,21 @@
       this.opacity = 0;
       this.size    = 26 + Math.random() * 20;
 
-      const color = PARTICLE_COLOR[type];
-
       this.el = document.createElement('div');
       this.el.className = 'particle';
       this.el.style.width  = `${this.size}px`;
       this.el.style.height = `${this.size}px`;
-      this.el.style.filter = `drop-shadow(0 0 4px ${color})`;
 
-      const img = document.createElement('img');
-      img.src = ICON_SRC[type];
-      img.draggable = false;
-      img.setAttribute('aria-hidden', 'true');
-      this.el.appendChild(img);
-
-      const colorOverlay = document.createElement('div');
-      colorOverlay.className = 'particle-color-overlay';
-      colorOverlay.style.background = color;
-      this.el.appendChild(colorOverlay);
+      if (type === 'crits') {
+        this.el.appendChild(makeCritsSvg());
+      } else {
+        const img = document.createElement('img');
+        img.src = ICON_SRC[type];
+        img.style.filter = PARTICLE_FILTER[type];
+        img.draggable = false;
+        img.setAttribute('aria-hidden', 'true');
+        this.el.appendChild(img);
+      }
 
       overlay.appendChild(this.el);
     }
@@ -472,6 +523,7 @@
   document.querySelectorAll('.spark-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const isActive = btn.classList.toggle('active');
+      triggerBounce();
       if (isActive) {
         spawnParticles(btn.dataset.type);
       } else {
@@ -506,7 +558,8 @@
 
     flowerOffX += (floatX + driftX - flowerOffX) * 0.038;
     flowerOffY += (floatY + driftY - flowerOffY) * 0.038;
-    wrapper.style.transform = `translateY(-50%) translate(${flowerOffX}px, ${flowerOffY}px) rotate(${tilt}deg)`;
+    const bounce = getBounceScale();
+    wrapper.style.transform = `translateY(-50%) translate(${flowerOffX}px, ${flowerOffY + bounce.dy}px) rotate(${tilt}deg) scale(${bounce.sx.toFixed(4)}, ${bounce.sy.toFixed(4)})`;
 
     // ── Body 3D tilt — shadows/highlights wrap the form ──────
     const BODY_MAX_TILT = 22;
