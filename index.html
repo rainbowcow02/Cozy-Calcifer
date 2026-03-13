@@ -312,33 +312,63 @@
 
   /* ── Reaction bounce ────────────────────────────────────────
      Triggered on every spark-btn click.
-     Phase 1 ( 7 frames / 0.12s): squish + sink  60px down
-     Phase 2 (14 frames / 0.23s): stretch + shoot 100px up
-     Phase 3 ( 9 frames / 0.15s): drift back to rest          */
-  const B1 = 7, B2 = 14, B3 = 9;
-  const BOUNCE_TOTAL = B1 + B2 + B3;
-  let bounceT = 0;
+     Phase 1 (5 frames / 0.08s): squish + sink  60px down
+     Phase 2 (9 frames / 0.15s): stretch + shoot 100px up
+     Phase 3 (6 frames / 0.10s): fall back, overshoot +8px
+     Phase 4 (4 frames / 0.07s): spring back to rest        */
+  // right/left phases
+  const B1 = 5, B2 = 9, B3 = 6, B4 = 4;
+  const BOUNCE_TOTAL = B1 + B2 + B3 + B4;
+  // axel phases — slow wind-up → visible spin → land cleanly
+  const A1 = 12, A2 = 16, A3 = 8, A4 = 5;
+  const BOUNCE_TOTAL_AXEL = A1 + A2 + A3 + A4;
 
-  function triggerBounce() { bounceT = BOUNCE_TOTAL; }
+  let bounceT = 0;
+  // Cycles: lean-right → lean-left → axel → repeat
+  const BOUNCE_STYLES = ['right', 'left', 'axel'];
+  let bounceStyleIdx = 0;
+  let bounceStyle    = 'right';
+
+  function triggerBounce() {
+    bounceStyle    = BOUNCE_STYLES[bounceStyleIdx % 3];
+    bounceStyleIdx++;
+    bounceT = bounceStyle === 'axel' ? BOUNCE_TOTAL_AXEL : BOUNCE_TOTAL;
+  }
 
   function getBounceScale() {
-    if (bounceT <= 0) return { sx: 1, sy: 1, dy: 0 };
-    const elapsed = BOUNCE_TOTAL - bounceT;
+    if (bounceT <= 0) return { sx: 1, sy: 1, dy: 0, rot: 0 };
+    const total   = bounceStyle === 'axel' ? BOUNCE_TOTAL_AXEL : BOUNCE_TOTAL;
+    const elapsed = total - bounceT;
     bounceT--;
     const ein  = t => 1 - Math.cos(t * Math.PI * 0.5); // slow start → fast end
     const eout = t => Math.sin(t * Math.PI * 0.5);      // fast start → slow end
-    if (elapsed < B1) {
-      // Phase 1: ease-in — hesitant wind-up that snaps into the dip
-      const e = ein(elapsed / B1);
-      return { sx: 1 + e * 0.15, sy: 1 - e * 0.20, dy: e * 60 };
-    } else if (elapsed < B1 + B2) {
-      // Phase 2: ease-out — explosive launch, gravity bleeds off speed
-      const e = eout((elapsed - B1) / B2);
-      return { sx: 1.15 - e * 0.30, sy: 0.80 + e * 0.42, dy: 60 - e * 160 };
+    const eio  = t => (1 - Math.cos(t * Math.PI)) * 0.5; // slow → fast → slow
+    const dir  = bounceStyle === 'left' ? -1 : 1;
+    const axel = bounceStyle === 'axel';
+    const p1 = axel ? A1 : B1;
+    const p2 = axel ? A2 : B2;
+    const p3 = axel ? A3 : B3;
+    const p4 = axel ? A4 : B4;
+    if (elapsed < p1) {
+      // Phase 1: wind-up (axel: slow dramatic load; right/left: lean back)
+      const e = ein(elapsed / p1);
+      return { sx: 1 + e * 0.15, sy: 1 - e * 0.20, dy: e * 60,
+               rot: axel ? e * 10 : dir * e * 2.5 };
+    } else if (elapsed < p1 + p2) {
+      // Phase 2: launch (axel: snappy full spin; right/left: tip forward)
+      const e = eout((elapsed - p1) / p2);
+      return { sx: 1.15 - e * 0.30, sy: 0.80 + e * 0.42, dy: 60 - e * 160,
+               rot: axel ? 10 + e * 355 : dir * (2.5 - e * 5.5) };
+    } else if (elapsed < p1 + p2 + p3) {
+      // Phase 3: fall + overshoot (axel: glide to clean 360; right/left: swing back)
+      const e = eout((elapsed - p1 - p2) / p3);
+      return { sx: 0.85 + e * 0.20, sy: 1.22 - e * 0.27, dy: -100 + e * 108,
+               rot: axel ? 365 - e * 5 : dir * (-3 + e * 4) };
     } else {
-      // Phase 3: ease-out — gravity snaps it back, drifts softly to rest
-      const e = eout((elapsed - B1 - B2) / B3);
-      return { sx: 0.85 + e * 0.15, sy: 1.22 - e * 0.22, dy: -100 + e * 100 };
+      // Phase 4: spring to rest (axel lands at 360° ≡ 0°, no snap)
+      const e = eio((elapsed - p1 - p2 - p3) / p4);
+      return { sx: 1.05 - e * 0.05, sy: 0.95 + e * 0.05, dy: 8 - e * 8,
+               rot: axel ? 360 : dir * (1 - e) };
     }
   }
 
@@ -559,7 +589,9 @@
     flowerOffX += (floatX + driftX - flowerOffX) * 0.038;
     flowerOffY += (floatY + driftY - flowerOffY) * 0.038;
     const bounce = getBounceScale();
-    wrapper.style.transform = `translateY(-50%) translate(${flowerOffX}px, ${flowerOffY + bounce.dy}px) rotate(${tilt}deg) scale(${bounce.sx.toFixed(4)}, ${bounce.sy.toFixed(4)})`;
+    faceOffY += (bounce.dy - faceOffY) * 0.2; // lerp face toward body position
+    const faceLagY = faceOffY - bounce.dy;     // residual: face is still "behind" body
+    wrapper.style.transform = `translateY(-50%) translate(${flowerOffX}px, ${flowerOffY + bounce.dy}px) rotate(${tilt + bounce.rot}deg) scale(${bounce.sx.toFixed(4)}, ${bounce.sy.toFixed(4)})`;
 
     // ── Body 3D tilt — shadows/highlights wrap the form ──────
     const BODY_MAX_TILT = 22;
@@ -576,7 +608,7 @@
     const shiftY =  Math.max(-MAX_SHIFT, Math.min(MAX_SHIFT, lerpY / 280 * MAX_SHIFT));
     // translate first (screen space), then tilt in 3D
     // applied to face-group so eyelids inherit the same transform
-    faceGroup.style.transform = `translate(${shiftX}px, ${shiftY}px) perspective(320px) rotateY(${tiltX}deg) rotateX(${tiltY}deg)`;
+    faceGroup.style.transform = `translate(${shiftX}px, ${shiftY + faceLagY}px) perspective(320px) rotateY(${tiltX}deg) rotateX(${tiltY}deg)`;
 
     // ── Blink ─────────────────────────────────────────────────
     const bf = floatT - blinkFStart;
@@ -609,6 +641,7 @@
     }
 
     const fc = flowerCenter();
+    fc.y -= bounce.dy; // counteract bounce so particles orbit the stable center
     for (let i = particles.length - 1; i >= 0; i--) {
       if (particles[i].update(fc) === 'remove') {
         particles[i].destroy();
