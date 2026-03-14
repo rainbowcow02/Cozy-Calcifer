@@ -65,10 +65,13 @@
 
     /* ── Buttons ─────────────────────────────────────────── */
     #controls {
-      position: absolute;
-      right: 9%;
-      top: 50%;
-      transform: translateY(-50%);
+      position: fixed;
+      right: 50px;
+      top: 0;
+      bottom: 0;
+      margin-top: auto;
+      margin-bottom: auto;
+      height: fit-content;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -76,6 +79,7 @@
       background: #8897F4;
       border-radius: 36px;
       padding: 12px 10px;
+      border: 8px solid rgba(0, 0, 0, 0.15);
       z-index: 10;
     }
 
@@ -123,6 +127,39 @@
       object-fit: contain;
       pointer-events: none;
       user-select: none;
+    }
+
+    /* ── Mobile layout (≤600px) ─────────────────────────── */
+    @media (max-width: 600px) {
+      #scene {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #flower-wrapper {
+        position: relative;
+        left: auto;
+        top: auto;
+      }
+
+      #controls {
+        position: fixed;
+        right: auto;
+        top: unset;
+        bottom: 100px;
+        margin-top: 0;
+        margin-bottom: 0;
+        height: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        flex-direction: row;
+        justify-content: center;
+        width: 500px;
+        min-width: 400px;
+        max-width: calc(100% - 32px);
+        padding: 10px 12px;
+      }
     }
 
     /* ── Particles ───────────────────────────────────────── */
@@ -387,6 +424,22 @@
     mouseY = e.clientY - sr.top  - cy;
   });
 
+  /* ── Responsive mode cache ───────────────────────────────
+     Checked once on load and on resize — not every RAF tick.
+     Resetting lerp values on mode-switch prevents the flower
+     from jumping due to stale accumulated offsets.           */
+  let isMobile = window.innerWidth <= 600;
+  window.addEventListener('resize', () => {
+    const wasMobile = isMobile;
+    isMobile = window.innerWidth <= 600;
+    if (wasMobile !== isMobile) {
+      flowerOffX = 0;
+      flowerOffY = 0;
+      lerpX = 0;
+      lerpY = 0;
+    }
+  });
+
   let mouseLeaveTimer = null;
   document.addEventListener('mouseleave', () => {
     mouseLeaveTimer = setTimeout(() => {
@@ -592,7 +645,8 @@
     const bounce = getBounceScale();
     faceOffY += (bounce.dy - faceOffY) * 0.2; // lerp face toward body position
     const faceLagY = faceOffY - bounce.dy;     // residual: face is still "behind" body
-    wrapper.style.transform = `translateY(-50%) translate(${flowerOffX}px, ${flowerOffY + bounce.dy}px) rotate(${tilt + bounce.rot}deg) scale(${bounce.sx.toFixed(4)}, ${bounce.sy.toFixed(4)})`;
+    const vertCenter = isMobile ? '' : 'translateY(-50%) ';
+    wrapper.style.transform = `${vertCenter}translate(${flowerOffX}px, ${flowerOffY + bounce.dy}px) rotate(${tilt + bounce.rot}deg) scale(${bounce.sx.toFixed(4)}, ${bounce.sy.toFixed(4)})`;
 
     // ── Body 3D tilt — shadows/highlights wrap the form ──────
     const BODY_MAX_TILT = 22;
