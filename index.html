@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cozy Calcifer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --navy:        #1B2461;
@@ -129,6 +131,144 @@
       user-select: none;
     }
 
+    /* ── Chat UI ────────────────────────────────────────── */
+    #chat-ui {
+      position: absolute;
+      left: calc(50% + 100px);
+      top: calc(50% - 185px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 30;
+    }
+
+    #chat-bubble {
+      position: relative;
+      background: #FFFDF0;
+      border: 4px solid var(--periwinkle);
+      border-radius: 22px;
+      padding: 14px 18px 13px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--navy);
+      width: fit-content;
+      opacity: 0;
+      transform: scale(0.8);
+      transform-origin: left center;
+      pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.3s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    #chat-bubble.visible {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
+    /* tail – outer triangle (border colour) */
+    #chat-bubble::after {
+      content: '';
+      position: absolute;
+      left: -20px;
+      top: 17px;
+      width: 0;
+      height: 0;
+      border-width: 12px 20px 12px 0;
+      border-style: solid;
+      border-color: transparent var(--periwinkle) transparent transparent;
+    }
+
+    /* tail – inner triangle (fill colour) */
+    #chat-bubble::before {
+      content: '';
+      position: absolute;
+      left: -12px;
+      top: 21px;
+      width: 0;
+      height: 0;
+      border-width: 8px 13px 8px 0;
+      border-style: solid;
+      border-color: transparent #FFFDF0 transparent transparent;
+      z-index: 2;
+    }
+
+    #bubble-text {
+      min-height: 1.45em;
+      line-height: 1.45;
+    }
+
+    .bubble-cursor {
+      display: inline-block;
+      animation: cursor-blink 0.65s steps(1) infinite;
+      color: var(--periwinkle);
+    }
+
+    @keyframes cursor-blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    #options-panel {
+      background: #FFFDF0;
+      border: 4px solid var(--periwinkle);
+      border-radius: 18px;
+      padding: 6px 0;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      color: var(--navy);
+      min-width: 220px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+
+    #options-panel.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .option-item {
+      display: flex;
+      align-items: center;
+      padding: 6px 16px;
+      font-size: 16px;
+      white-space: nowrap;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(6px);
+      pointer-events: none;
+      transition: background 0.12s ease, opacity 0.22s ease, transform 0.22s ease;
+      border-radius: 12px;
+      margin: 2px 4px;
+    }
+
+    .option-item.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .option-item:hover {
+      background: rgba(123, 143, 214, 0.18);
+    }
+
+    .opt-arrow {
+      color: var(--periwinkle);
+      font-size: 32px;
+      line-height: 1;
+      width: 0;
+      overflow: hidden;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: width 0.2s ease, opacity 0.18s ease;
+    }
+
+    .option-item:hover .opt-arrow {
+      width: 24px;
+      opacity: 1;
+    }
+
     /* ── Mobile layout (≤600px) ─────────────────────────── */
     @media (max-width: 600px) {
       #scene {
@@ -141,6 +281,12 @@
         position: relative;
         left: auto;
         top: auto;
+      }
+
+      #chat-ui {
+        left: 50%;
+        top: calc(50% - 300px);
+        transform: translateX(-50%);
       }
 
       #controls {
@@ -262,6 +408,18 @@
                     clip-path:inset(115px 0 0 0);" alt="">
       </div>
 
+    </div>
+  </div>
+
+  <!-- ── Chat UI ───────────────────────────────────────── -->
+  <div id="chat-ui">
+    <div id="chat-bubble">
+      <div id="bubble-text"></div>
+    </div>
+    <div id="options-panel">
+      <div class="option-item" data-option="focus"><span class="opt-arrow">›</span>let's focus! ✍️</div>
+      <div class="option-item" data-option="break"><span class="opt-arrow">›</span>wanna take a break? 😎</div>
+      <div class="option-item" data-option="tired"><span class="opt-arrow">›</span>feelin' tired 😮‍💨</div>
     </div>
   </div>
 
@@ -706,6 +864,85 @@
     requestAnimationFrame(loop);
   }
   loop();
+
+  /* ── Chat UI ─────────────────────────────────────────── */
+  const chatBubble   = document.getElementById('chat-bubble');
+  const bubbleText   = document.getElementById('bubble-text');
+  const chatUI       = document.getElementById('chat-ui');
+  const optionsPanel = document.getElementById('options-panel');
+  const optionItems  = document.querySelectorAll('.option-item');
+
+  let chatOpen       = false;
+  let typewriterRaf  = null;
+  let optionTimeouts = [];
+
+  const CHAT_MSG = "what's up? 🌸";
+
+  function openChat() {
+    chatOpen = true;
+    chatBubble.classList.add('visible');
+    bubbleText.innerHTML = '';
+
+    const chars  = [...CHAT_MSG];
+    let   i      = 0;
+    const cursor = document.createElement('span');
+    cursor.className  = 'bubble-cursor';
+    cursor.textContent = '|';
+    bubbleText.appendChild(cursor);
+
+    const CHAR_MS = 40;
+    let last = 0;
+    function typeFrame(ts) {
+      if (ts - last >= CHAR_MS) {
+        last = ts;
+        if (i < chars.length) {
+          cursor.insertAdjacentText('beforebegin', chars[i++]);
+        } else {
+          cursor.remove();
+          optionsPanel.classList.add('visible');
+          optionItems.forEach((item, idx) => {
+            const t = setTimeout(() => item.classList.add('visible'), idx * 130);
+            optionTimeouts.push(t);
+          });
+          return;
+        }
+      }
+      typewriterRaf = requestAnimationFrame(typeFrame);
+    }
+    typewriterRaf = requestAnimationFrame(typeFrame);
+  }
+
+  function closeChat() {
+    chatOpen = false;
+    cancelAnimationFrame(typewriterRaf);
+    optionTimeouts.forEach(clearTimeout);
+    optionTimeouts = [];
+    chatBubble.classList.remove('visible');
+    optionsPanel.classList.remove('visible');
+    optionItems.forEach(item => item.classList.remove('visible'));
+    setTimeout(() => { bubbleText.innerHTML = ''; }, 250);
+  }
+
+  wrapper.style.cursor = 'pointer';
+  wrapper.addEventListener('click', e => {
+    e.stopPropagation();
+    if (chatOpen) {
+      closeChat();
+    } else {
+      triggerBounce();
+      openChat();
+    }
+  });
+
+  chatUI.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', () => { if (chatOpen) closeChat(); });
+
+  optionItems.forEach(item => {
+    item.addEventListener('click', () => {
+      // TODO: trigger character state for item.dataset.option
+      closeChat();
+    });
+  });
 </script>
 </body>
 </html>
