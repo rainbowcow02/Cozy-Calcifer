@@ -2,7 +2,30 @@
   "permissions": {
     "allow": [
       "Bash(git init:*)",
-      "Bash(gh pr:*)"
+      "Bash(gh pr:*)",
+      "mcp__mcp-registry__search_mcp_registry",
+      "WebFetch(domain:api.anthropic.com)",
+      "WebSearch",
+      "WebFetch(domain:help.figma.com)",
+      "WebFetch(domain:developers.figma.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(screencapture -x /Users/lindsaylee/Desktop/flower-character-app.png)",
+      "Bash(screencapture /Users/lindsaylee/Desktop/flower-character-app.png)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(osascript -e 'set the clipboard to \\(read POSIX file \"\"/Users/lindsaylee/Downloads/flower-character-app.png\"\" as JPEG picture\\)')",
+      "Bash(osascript -e 'set the clipboard to \\(read \\(POSIX file \"\"/Users/lindsaylee/Downloads/flower-character-app.png\"\"\\) as «class PNGf»\\)')",
+      "Bash(osascript:*)",
+      "Bash(python3 -c \"import pyautogui; print\\(''available''\\)\")",
+      "Bash(python3 -c \"import AppKit; print\\(''AppKit available''\\)\")",
+      "Bash(screencapture /tmp/figma-check.png)",
+      "Bash(claude mcp:*)",
+      "mcp__figma__generate_figma_design",
+      "Bash(open \"http://localhost:4321/#figmacapture=4eb36a02-642b-42bb-84d1-0c3a9c70daad&figmaendpoint=https%3A%2F%2Fmcp.figma.com%2Fmcp%2Fcapture%2F4eb36a02-642b-42bb-84d1-0c3a9c70daad%2Fsubmit&figmadelay=1000\")",
+      "mcp__figma__whoami",
+      "Bash(open \"http://localhost:8080/#figmacapture=9d239a4e-7c75-4ba7-9f91-c250a648eab3&figmaendpoint=https%3A%2F%2Fmcp.figma.com%2Fmcp%2Fcapture%2F9d239a4e-7c75-4ba7-9f91-c250a648eab3%2Fsubmit&figmadelay=1000\")",
+      "mcp__figma__get_design_context",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(open \"/Users/lindsaylee/Documents/Side Projects/Cozy Calcifer/index.html\")"
     ]
   }
 }
