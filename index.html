@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cozy Calcifer</title>
+  <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --navy:        #1B2461;
@@ -129,6 +132,136 @@
       user-select: none;
     }
 
+    /* ── Chat UI ────────────────────────────────────────── */
+    #chat-ui {
+      position: absolute;
+      left: calc(50% + 100px);
+      top: calc(50% - 110px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 30;
+    }
+
+    #chat-bubble {
+      position: relative;
+      background:
+        linear-gradient(#fffdef, #fffdef) padding-box,
+        linear-gradient(180deg, rgba(195, 177, 235, 0.6) 0%, rgba(34, 58, 230, 0.6) 100%) border-box;
+      border: 4px solid transparent;
+      border-radius: 12px;
+      box-shadow: 0px 5px 14px 0px rgba(177, 184, 235, 0.15);
+      padding: 14px 18px 13px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--navy);
+      width: fit-content;
+      opacity: 0;
+      transform: scale(0.8);
+      transform-origin: left center;
+      pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.3s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    #chat-bubble.visible {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
+    /* tail – SVG, left-pointing (desktop) */
+    .bubble-tail {
+      position: absolute;
+      right: calc(100% - 1px);
+      top: 0;
+      height: 100%;
+      width: auto;
+      display: block;
+      overflow: visible;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    #bubble-text {
+      min-height: 1.45em;
+      line-height: 1.45;
+    }
+
+    .bubble-cursor {
+      display: inline-block;
+      animation: cursor-blink 0.65s steps(1) infinite;
+      color: var(--periwinkle);
+    }
+
+    @keyframes cursor-blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    #options-panel {
+      background:
+        linear-gradient(#fffdef, #fffdef) padding-box,
+        linear-gradient(180deg, rgba(195, 177, 235, 0.6) 0%, rgba(34, 58, 230, 0.6) 100%) border-box;
+      border: 4px solid transparent;
+      border-radius: 12px;
+      box-shadow: 0px 5px 14px 0px rgba(177, 184, 235, 0.15);
+      padding: 6px 0;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      color: var(--navy);
+      min-width: 220px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+
+    #options-panel.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .option-item {
+      display: flex;
+      align-items: center;
+      padding: 6px 16px;
+      font-size: 16px;
+      white-space: nowrap;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(6px);
+      pointer-events: none;
+      transition: background 0.12s ease, opacity 0.22s ease, transform 0.22s ease;
+      border-radius: 12px;
+      margin: 2px 4px;
+    }
+
+    .option-item.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .option-item:hover {
+      background: rgba(254, 173, 0, 0.15);
+    }
+
+    .opt-arrow {
+      color: var(--periwinkle);
+      font-size: 32px;
+      line-height: 1;
+      width: 0;
+      overflow: hidden;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: width 0.2s ease, opacity 0.18s ease;
+    }
+
+    .option-item:hover .opt-arrow {
+      width: 24px;
+      opacity: 1;
+    }
+
     /* ── Mobile layout (≤600px) ─────────────────────────── */
     @media (max-width: 600px) {
       #scene {
@@ -141,6 +274,26 @@
         position: relative;
         left: auto;
         top: auto;
+      }
+
+      #chat-ui {
+        left: calc(40% + 40px);
+        top: calc(50% - 360px);
+        transform: none;
+        flex-direction: column-reverse;
+        align-items: flex-start;
+      }
+
+      /* tail points downward on mobile */
+      .bubble-tail {
+        right: auto;
+        top: calc(100% - 1px);
+        left: 20px;
+        height: auto;
+        width: 24px;
+        overflow: hidden;
+        transform: rotate(90deg) scaleX(-1);
+        transform-origin: top left;
       }
 
       #controls {
@@ -186,6 +339,7 @@
     }
 
   </style>
+  <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
 </head>
 <body>
 <div id="scene">
@@ -262,6 +416,47 @@
                     clip-path:inset(115px 0 0 0);" alt="">
       </div>
 
+    </div>
+  </div>
+
+  <!-- ── Chat UI ───────────────────────────────────────── -->
+  <div id="chat-ui">
+    <div id="chat-bubble">
+      <svg class="bubble-tail" viewBox="0 0 28 119" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="tail-stroke-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="119">
+            <stop offset="0%" stop-color="rgba(195,177,235,0.6)"/>
+            <stop offset="100%" stop-color="rgba(34,58,230,0.6)"/>
+          </linearGradient>
+          <!-- clips only the right side so endpoint stubs stay hidden behind the bubble,
+               while the left tip is free to bleed outside the viewBox -->
+          <clipPath id="tail-right-clip">
+            <rect x="-20" y="-10" width="48" height="139"/>
+          </clipPath>
+        </defs>
+        <!-- cream fill: right edge at x=35 so it covers the bubble's 4px left border -->
+        <path
+          d="M35 118.4C35 114.086 27.4992 109.774 27.4601 105.46C27.422 101.331 27.3681 96.7094 26.0962 92.6913C24.7218 88.3509 22.3186 85.4774 19.4904 82.5862C17.4562 80.5048 13.1161 76.4162 11.0206 74.4254C9.30255 72.796 5.90661 69.6064 4.26361 67.8649C2.19665 65.6727 -0.000355126 62.9629 -0.000354633 59.1991C-0.000354139 55.4354 2.19665 52.7268 4.2615 50.5358C5.90344 48.7944 9.3015 45.6048 11.0185 43.9742C13.114 41.9859 17.4541 37.8973 19.4883 35.8145C22.3165 32.9184 24.7197 30.0499 26.0941 25.7107C27.3628 21.6914 27.4199 17.0688 27.458 12.9424C27.4971 8.62717 35 4.31441 35 0Z"
+          fill="#fffdef"
+          stroke="none"
+        />
+        <!-- gradient stroke: open path (no Z) — right edge has no stroke, endpoints tucked behind bubble at x=35 -->
+        <path
+          d="M35 118.4C35 114.086 27.4992 109.774 27.4601 105.46C27.422 101.331 27.3681 96.7094 26.0962 92.6913C24.7218 88.3509 22.3186 85.4774 19.4904 82.5862C17.4562 80.5048 13.1161 76.4162 11.0206 74.4254C9.30255 72.796 5.90661 69.6064 4.26361 67.8649C2.19665 65.6727 -0.000355126 62.9629 -0.000354633 59.1991C-0.000354139 55.4354 2.19665 52.7268 4.2615 50.5358C5.90344 48.7944 9.3015 45.6048 11.0185 43.9742C13.114 41.9859 17.4541 37.8973 19.4883 35.8145C22.3165 32.9184 24.7197 30.0499 26.0941 25.7107C27.3628 21.6914 27.4199 17.0688 27.458 12.9424C27.4971 8.62717 35 4.31441 35 0"
+          fill="none"
+          stroke="url(#tail-stroke-grad)"
+          stroke-width="4"
+          vector-effect="non-scaling-stroke"
+          stroke-linejoin="round"
+          clip-path="url(#tail-right-clip)"
+        />
+      </svg>
+      <div id="bubble-text"></div>
+    </div>
+    <div id="options-panel">
+      <div class="option-item" data-option="focus"><span class="opt-arrow">›</span>let's focus! ✍️</div>
+      <div class="option-item" data-option="break"><span class="opt-arrow">›</span>wanna take a break? 😎</div>
+      <div class="option-item" data-option="tired"><span class="opt-arrow">›</span>feelin' tired 😮‍💨</div>
     </div>
   </div>
 
@@ -706,6 +901,85 @@
     requestAnimationFrame(loop);
   }
   loop();
+
+  /* ── Chat UI ─────────────────────────────────────────── */
+  const chatBubble   = document.getElementById('chat-bubble');
+  const bubbleText   = document.getElementById('bubble-text');
+  const chatUI       = document.getElementById('chat-ui');
+  const optionsPanel = document.getElementById('options-panel');
+  const optionItems  = document.querySelectorAll('.option-item');
+
+  let chatOpen       = false;
+  let typewriterRaf  = null;
+  let optionTimeouts = [];
+
+  const CHAT_MSG = "what's up? 🌸";
+
+  function openChat() {
+    chatOpen = true;
+    chatBubble.classList.add('visible');
+    bubbleText.innerHTML = '';
+
+    const chars  = [...CHAT_MSG];
+    let   i      = 0;
+    const cursor = document.createElement('span');
+    cursor.className  = 'bubble-cursor';
+    cursor.textContent = '|';
+    bubbleText.appendChild(cursor);
+
+    const CHAR_MS = 40;
+    let last = 0;
+    function typeFrame(ts) {
+      if (ts - last >= CHAR_MS) {
+        last = ts;
+        if (i < chars.length) {
+          cursor.insertAdjacentText('beforebegin', chars[i++]);
+        } else {
+          cursor.remove();
+          optionsPanel.classList.add('visible');
+          optionItems.forEach((item, idx) => {
+            const t = setTimeout(() => item.classList.add('visible'), idx * 130);
+            optionTimeouts.push(t);
+          });
+          return;
+        }
+      }
+      typewriterRaf = requestAnimationFrame(typeFrame);
+    }
+    typewriterRaf = requestAnimationFrame(typeFrame);
+  }
+
+  function closeChat() {
+    chatOpen = false;
+    cancelAnimationFrame(typewriterRaf);
+    optionTimeouts.forEach(clearTimeout);
+    optionTimeouts = [];
+    chatBubble.classList.remove('visible');
+    optionsPanel.classList.remove('visible');
+    optionItems.forEach(item => item.classList.remove('visible'));
+    setTimeout(() => { bubbleText.innerHTML = ''; }, 250);
+  }
+
+  wrapper.style.cursor = 'pointer';
+  wrapper.addEventListener('click', e => {
+    e.stopPropagation();
+    if (chatOpen) {
+      closeChat();
+    } else {
+      triggerBounce();
+      openChat();
+    }
+  });
+
+  chatUI.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', () => { if (chatOpen) closeChat(); });
+
+  optionItems.forEach(item => {
+    item.addEventListener('click', () => {
+      // TODO: trigger character state for item.dataset.option
+      closeChat();
+    });
+  });
 </script>
 </body>
 </html>
