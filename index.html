@@ -141,6 +141,7 @@
       flex-direction: column;
       gap: 10px;
       z-index: 30;
+      pointer-events: none;
     }
 
     #chat-bubble {
@@ -156,9 +157,8 @@
       font-size: 17px;
       font-weight: 800;
       color: var(--navy);
-      min-width: 220px;
-      max-width: 220px;
-      width: 220px;
+      width: fit-content;
+      max-width: 260px;
       opacity: 0;
       transform: scale(0.8);
       transform-origin: left center;
@@ -178,6 +178,7 @@
       right: calc(100% - 1px);
       top: 0;
       height: 100%;
+      max-height: 52px;
       width: auto;
       display: block;
       overflow: visible;
@@ -1027,38 +1028,43 @@
 
       const quote = pool[Math.floor(Math.random() * pool.length)];
 
-      // hide options, keep bubble open for response
+      // 1. Stop any in-progress animation and fade both elements out
       cancelAnimationFrame(typewriterRaf);
       optionTimeouts.forEach(clearTimeout);
       optionTimeouts = [];
+      chatBubble.classList.remove('visible');
       optionsPanel.classList.remove('visible');
       optionItems.forEach(i => i.classList.remove('visible'));
-      bubbleText.innerHTML = '';
 
-      // typewrite the response
-      const chars = [...quote];
-      let i = 0;
-      const cursor = document.createElement('span');
-      cursor.className = 'bubble-cursor';
-      cursor.textContent = '|';
-      bubbleText.appendChild(cursor);
+      // 2. After fade-out, show a fresh bubble with the response
+      responseTimeout = setTimeout(() => {
+        bubbleText.innerHTML = '';
+        chatBubble.classList.add('visible');
 
-      const CHAR_MS = 38;
-      let last = 0;
-      function typeResponse(ts) {
-        if (ts - last >= CHAR_MS) {
-          last = ts;
-          if (i < chars.length) {
-            cursor.insertAdjacentText('beforebegin', chars[i++]);
-          } else {
-            cursor.remove();
-            responseTimeout = setTimeout(closeChat, 2500);
-            return;
+        const chars = [...quote];
+        let i = 0;
+        const cursor = document.createElement('span');
+        cursor.className = 'bubble-cursor';
+        cursor.textContent = '|';
+        bubbleText.appendChild(cursor);
+
+        const CHAR_MS = 38;
+        let last = 0;
+        function typeResponse(ts) {
+          if (ts - last >= CHAR_MS) {
+            last = ts;
+            if (i < chars.length) {
+              cursor.insertAdjacentText('beforebegin', chars[i++]);
+            } else {
+              cursor.remove();
+              responseTimeout = setTimeout(closeChat, 2500);
+              return;
+            }
           }
+          typewriterRaf = requestAnimationFrame(typeResponse);
         }
         typewriterRaf = requestAnimationFrame(typeResponse);
-      }
-      typewriterRaf = requestAnimationFrame(typeResponse);
+      }, 280);
     });
   });
 </script>
