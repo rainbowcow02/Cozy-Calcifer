@@ -157,11 +157,17 @@ A floating, always-visible companion who lives in the corner of your Mac screen.
 - Lives in a corner of the screen, never in the way
 - Accessible at a glance without switching apps or tabs
 
-**2. Speech bubbles — on demand, not intrusive**
-- Hover over the character to reveal a small prompt menu
-- Prompts include: Motivate me, Make me laugh, I need a pep talk, etc.
-- Character responds in its own voice — an inspiring quote, a warm nudge, a dry joke
-- Personality-driven: the character has a consistent tone and sense of humor
+**2. Speech bubbles — on demand, not intrusive ✅ Done**
+
+*What was built:* Tap/hover the character to reveal an action bar of prompt buttons. Pick one and the character responds in a styled speech bubble with a typewriter animation.
+
+- Action bar appears on interaction with labeled prompt buttons; CSS handles scaling and responsive layout
+- Character responds in a rounded speech bubble with a custom tail; tail tip anchored by `bottom` so it stays fixed as the bubble grows
+- Response text animates in sentence-by-sentence with breathing pauses between sentences
+- Bubble expands vertically to fit multi-line responses; width matches the action bar
+- Mobile-responsive: action bar fits within 30px side padding; character shifts down to make room
+
+*Still needed:* Real Claude API responses (currently placeholder text); defined character personality/voice
 
 **3. Activity states with props**
 - The character visually reflects what you're both doing together
@@ -180,9 +186,9 @@ A floating, always-visible companion who lives in the corner of your Mac screen.
 
 ### Open questions to resolve
 - What is the character's name and defined personality/voice?
+- What prompt categories/labels go on the action bar buttons?
 - How are activity states triggered — manual selection, or automatic detection?
-- How frequently can speech bubbles be requested before they feel cheap?
-- What prompt categories make the most sense to start with?
+- Which Claude model and prompt system handles character responses?
 
 ---
 
@@ -190,5 +196,5 @@ A floating, always-visible companion who lives in the corner of your Mac screen.
 
 - New character parts or SVG assets
 - Sound / audio
-- Mobile / touch interactions
+- Native mobile app (mobile-responsive web view is now supported)
 - Any changes to the existing float, parallax, gaze, or blink systems
