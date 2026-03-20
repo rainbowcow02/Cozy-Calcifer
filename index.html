@@ -826,6 +826,7 @@
     btn.addEventListener('click', () => {
       const isActive = btn.classList.toggle('active');
       triggerBounce();
+      setTimeout(() => { mouseX = 0; mouseY = 0; }, 600);
       if (isActive) {
         spawnParticles(btn.dataset.type);
       } else {
@@ -1047,6 +1048,8 @@
 
       // 2. After fade-out, typewrite each sentence with a breathing pause between them
       responseTimeout = setTimeout(() => {
+        setTimeout(() => { mouseX = 0; mouseY = 0; }, 600);
+
         bubbleText.innerHTML = '';
 
         // Split on sentence endings so each thought gets its own moment
