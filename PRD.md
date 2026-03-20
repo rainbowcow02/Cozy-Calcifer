@@ -46,13 +46,28 @@ Buttons visually reflect whether their particle type is currently active (partic
 
 ---
 
+### 3. Shadow + Highlight Dynamic Movement
+
+**What it does**
+The body's shadow and highlight layers have their own sense of movement — subtle independent drift in the idle state, and enhanced physical reaction during jumps and spins.
+
+**Behavior**
+- Idle: each layer has a slow drift of its own (sin/cos oscillation layered on top of mouse parallax), using different frequencies so shadow and highlight feel independent
+- During bounce: shadow layers compress on landing, highlights streak on launch — reinforcing the physical weight of the animation
+
+**Technical approach**
+- Add per-layer oscillation to the parallax update loop using `floatT` at slow, distinct frequencies
+- Read `bounceT` state to scale the shadow/highlight offset during active bounces
+
+---
+
 ## Tier 2 — Reactivity
 
 These features make the character respond to user presence and actions.
 
 ---
 
-### 3. Squash & Stretch on Cursor Proximity
+### 4. Squash & Stretch on Cursor Proximity
 
 **What it does**
 When the cursor drifts close to the character, it squishes slightly — widening and shortening — then pops back as the cursor moves away. Classic Disney principle that sells physical weight.
@@ -69,7 +84,7 @@ When the cursor drifts close to the character, it squishes slightly — widening
 
 ---
 
-### 4. Reaction to Particle Spawns ✅ Done
+### 5. Reaction to Particle Spawns ✅ Done
 
 **What it does**
 When a button is clicked, the character performs one of four expressive bounce animations in sequence, cycling with each click.
@@ -90,13 +105,57 @@ When a button is clicked, the character performs one of four expressive bounce a
 
 ---
 
+### 6. Load-In Jump Animation
+
+**What it does**
+On page load, the character does a quick excited jump to animate in — a "ta-da!" entrance rather than just appearing.
+
+**Behavior**
+- Single bounce auto-triggers on first frame
+- Float and parallax systems slightly delayed so the jump reads clearly before settling into idle drift
+
+**Technical approach**
+- Reuse existing `bounceT` / `bounceStyle` system — auto-trigger without waiting for a click
+
+---
+
+### 7. Rotating Load-In Greeting
+
+**What it does**
+The character says a short cozy greeting on load, cycling through a few options each visit — before the user even clicks anything.
+
+**Behavior**
+- Pool of ~5 greetings in Calcifer's cozy/casual voice (i.e. "hey there 🌸", "oh, you're here! ☕", "hi hi hi 🌼", "yo! 😎", "what's cookin'? 🔥" )
+- Randomly selected each load
+- Auto-triggers ~800ms after page load so the entry jump completes first
+- Typewriter animation, then bubble auto-closes — no options panel shown
+- Options only appear when user clicks the character intentionally
+
+---
+
+### 8. Response Animation (Talking State)
+
+**What it does**
+When the character is responding to a chat option, it plays a bigger, more expressive animation — swaying side-to-side or an excited talking motion — so the response feels grand and alive.
+
+**Behavior**
+- Gentle side-to-side sway and/or subtle scale pulse while the typewriter is running
+- Different from the idle float — more expressive, more present
+- Clears when the chat bubble auto-closes
+
+**Technical approach**
+- Add `talkingState` boolean flag
+- When true, layer a sin-wave X sway on top of normal float in the animation loop
+
+---
+
 ## Tier 3 — Polish
 
 Refinements that add depth and visual cohesion once the core feel is solid.
 
 ---
 
-### 5. Colored Particles ✅ Done
+### 9. Colored Particles ✅ Done
 
 **What it does**
 Each particle type gets a thematic color from the design palette, tinting the orbiting sparkles so they feel intentional and part of the visual system.
@@ -119,7 +178,21 @@ Each particle type gets a thematic color from the design palette, tinting the or
 
 ---
 
-### 6. Petal Independent Wobble
+### 10. Star Color Differentiation
+
+**What it does**
+Star1 and star2 are currently too similar in color. Make them visually distinct so each feels like its own type.
+
+**Behavior**
+- Star1: brighter, cooler — white-yellow or light blue/silver shimmer
+- Star2: warmer, richer — amber or orange-gold
+
+**Technical approach**
+- Adjust `hue-rotate` and `brightness` filter values for `star1` and `star2` in `PARTICLE_FILTER`
+
+---
+
+### 11. Petal Independent Wobble
 
 **What it does**
 The petals (scalloped edge layer) oscillate on their own slow frequency, as if catching a gentle breeze independently of the body.
@@ -136,11 +209,96 @@ The petals (scalloped edge layer) oscillate on their own slow frequency, as if c
 
 ---
 
+### 12. Particle Lifespan (Spawn → Float → Die)
+
+**What it does**
+Particles have a finite lifespan — they appear, orbit for a while, then gently fade out and are replaced. Calm and organic, like particles quietly cycling through.
+
+**Behavior**
+- Each particle lives long enough to complete several full orbits (~5–15 seconds) before fading
+- New particles continuously spawn to replace dying ones while the button is active
+- Feels like gentle turnover, not flickery disappearing
+
+**Technical approach**
+- Add `lifespan` (300–900 frames) and `age` counter to the `Particle` class
+- When `age >= lifespan`, mark as dying to trigger existing fade-out
+- Spawn loop replaces dying particles when button is active
+
+---
+
+### 13. Confetti Independent Movement (Galaxy Cluster)
+
+**What it does**
+The confetti cluster becomes its own little universe — the cluster as a whole orbits the flower, and inside it, individual pieces swirl around independently like planets in the abyss.
+
+**Behavior**
+- The cluster center orbits the flower as a whole (slow, drifting)
+- Each confetti piece orbits/wanders within the cluster with its own angle, radius, and speed
+- The overall system drifts around the character while individual pieces stay alive and in motion
+
+**Technical approach**
+- Two-level motion: cluster center position (relative to flower) + per-particle position (relative to cluster center)
+- Each `crits` particle stores its own cluster-relative orbital params
+
+---
+
+### 14. Focus Mode (Clean View)
+
+**What it does**
+A toggle to hide or shrink the action bar, leaving just the character in a minimal, distraction-free view. Great for ADHD body doubling focus sessions.
+
+**Behavior**
+- Small toggle on the edge of the action bar collapses it (slides off screen or shrinks to a dot)
+- Character still floats, reacts to mouse, and chat still works
+- Clicking the dot/edge restores the action bar
+
+---
+
+### 15. Particle Parameter Controls (Sliders)
+
+**What it does**
+Expose particle behavior as user-controllable sliders — letting you dial in exactly how busy or calm the particle system feels.
+
+**Controls**
+- **Count:** How many particles of each type orbit
+- **Speed:** How fast each particle moves
+- **Entropy:** How chaotic/random the paths are (wobble amplitude + drift)
+
+**Design**
+- Collapsible panel or drawer, visible in edit mode
+- Hidden in Focus Mode (Feature 14)
+
+---
+
+## Parking Lot — Future Ideas
+
+Features that are desirable but TBD on timing or approach.
+
+---
+
+### Facial Expressions
+
+**What it does**
+Character has more than one emotion — happy, surprised, sleepy, etc. — so it's not the same face forever.
+
+**Note:** Would require additional SVG face variants or a way to swap face slices. Current 3-slice face (forehead / eye-band / chin) is designed for blink only. Architecture TBD.
+
+---
+
+### AI Character Responses
+
+**What it does**
+Dynamic, personality-driven responses via Claude API instead of the current static response pools.
+
+**Note:** Current pool has 7 responses per topic (focus, break, tired). Can expand manually in the meantime. Full AI integration is a separate architecture conversation — involves Claude API, a defined character voice/personality, and prompt design.
+
 ---
 
 ## Opportunity — Desktop Companion
 
 The next major evolution: transform Cozy Calcifer from an animated browser character into a living desktop companion. Inspired by the Digimon concept of a personal digital friend who is always with you — not a productivity tool, but a *presence* that makes working feel less lonely.
+
+This is a separate future initiative, distinct from the web animation work above.
 
 ---
 
@@ -197,4 +355,3 @@ A floating, always-visible companion who lives in the corner of your Mac screen.
 - New character parts or SVG assets
 - Sound / audio
 - Native mobile app (mobile-responsive web view is now supported)
-- Any changes to the existing float, parallax, gaze, or blink systems
