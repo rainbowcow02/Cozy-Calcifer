@@ -187,8 +187,8 @@
     }
 
     #bubble-text {
-      min-height: 1.45em;
-      line-height: 1.45;
+      min-height: 1.8em;
+      line-height: 1.8;
       word-wrap: break-word;
     }
 
@@ -1042,54 +1042,54 @@
       optionsPanel.classList.remove('visible');
       optionItems.forEach(i => i.classList.remove('visible'));
 
-      // 2. After fade-out, show bubble at full height with line-by-line reveal
+      // 2. After fade-out, typewrite each sentence with a breathing pause between them
       responseTimeout = setTimeout(() => {
         bubbleText.innerHTML = '';
 
-        // Pre-render all words as inline-block spans so the bubble sizes to
-        // its full height immediately, before any animation starts.
-        const words = quote.split(' ');
-        words.forEach((w, i) => {
-          const sp = document.createElement('span');
-          sp.className = 'rv';
-          sp.style.cssText = 'display:inline-block;opacity:0;transform:translateY(-6px);';
-          sp.textContent = w;
-          bubbleText.appendChild(sp);
-          if (i < words.length - 1) bubbleText.appendChild(document.createTextNode(' '));
-        });
+        // Split on sentence endings so each thought gets its own moment
+        const segments = quote.split(/(?<=[.!?]) /).filter(Boolean);
 
-        // Show bubble — full height is already established by the hidden spans
         chatBubble.classList.add('visible');
 
-        // Measure visual line positions after a microtask so the browser has
-        // painted the bubble at its final size.
-        requestAnimationFrame(() => {
-          const spans = [...bubbleText.querySelectorAll('.rv')];
+        const cursor = document.createElement('span');
+        cursor.className = 'bubble-cursor';
+        cursor.textContent = '|';
+        bubbleText.appendChild(cursor);
 
-          // Group spans by their top edge → each group is one visual line
-          const lineMap = new Map();
-          spans.forEach(sp => {
-            const top = Math.round(sp.getBoundingClientRect().top);
-            if (!lineMap.has(top)) lineMap.set(top, []);
-            lineMap.get(top).push(sp);
-          });
-          const lines = [...lineMap.values()];
+        const CHAR_MS = 40;
+        const SEGMENT_PAUSE = 550;
 
-          // Stagger each line in from slightly above
-          lines.forEach((line, idx) => {
-            const t = setTimeout(() => {
-              line.forEach(sp => {
-                sp.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
-                sp.style.opacity = '1';
-                sp.style.transform = 'translateY(0)';
-              });
-              if (idx === lines.length - 1) {
-                responseTimeout = setTimeout(closeChat, 2500);
+        function typeSegment(segIdx) {
+          if (segIdx >= segments.length) {
+            cursor.remove();
+            responseTimeout = setTimeout(closeChat, 4000);
+            return;
+          }
+          if (segIdx > 0) {
+            cursor.insertAdjacentText('beforebegin', ' ');
+          }
+
+          const chars = [...segments[segIdx]];
+          let i = 0;
+          let last = 0;
+
+          function frame(ts) {
+            if (ts - last >= CHAR_MS) {
+              last = ts;
+              if (i < chars.length) {
+                cursor.insertAdjacentText('beforebegin', chars[i++]);
+              } else {
+                const t = setTimeout(() => typeSegment(segIdx + 1), SEGMENT_PAUSE);
+                optionTimeouts.push(t);
+                return;
               }
-            }, idx * 250);
-            optionTimeouts.push(t);
-          });
-        });
+            }
+            typewriterRaf = requestAnimationFrame(frame);
+          }
+          typewriterRaf = requestAnimationFrame(frame);
+        }
+
+        typeSegment(0);
       }, 280);
     });
   });
