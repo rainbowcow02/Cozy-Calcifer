@@ -156,7 +156,9 @@
       font-size: 17px;
       font-weight: 800;
       color: var(--navy);
-      width: fit-content;
+      min-width: 220px;
+      max-width: 220px;
+      width: 220px;
       opacity: 0;
       transform: scale(0.8);
       transform-origin: left center;
@@ -186,6 +188,7 @@
     #bubble-text {
       min-height: 1.45em;
       line-height: 1.45;
+      word-wrap: break-word;
     }
 
     .bubble-cursor {
@@ -925,6 +928,36 @@
 
   const CHAT_MSG = "what's up? 🌸";
 
+  const RESPONSES = {
+    focus: [
+      "Ooh! Let's DO this! Time to be amazing! ✍️",
+      "The chance to become the best version of yourself — that's right now! 🔥",
+      "Small steps every day. That's how big things get done. 💫",
+      "Focus isn't about being perfect. It's about being present. 🌸",
+      "You can fly, you know. You just have to believe it first! ⚡",
+      "Woohoo! I'll be right here cheering you on the whole time! 🌼",
+      "You don't have to feel motivated. You just have to begin. ✨",
+    ],
+    break: [
+      "Rest is productive too, you know! Even I need a little nap sometimes ☁️",
+      "Sometimes the most important thing is to take a quiet moment just for yourself. 🌙",
+      "Recovery is part of the system. Rest is how you become better. 🌿",
+      "Even champions take a breath between sets. You've earned this ☕",
+      "The world's still here when you get back, I promise! Go enjoy your break 🌻",
+      "The biggest returns often come from doing less, more intentionally. 🍃",
+      "I'll keep things cozy here! Take all the time you need 🌸",
+    ],
+    tired: [
+      "Waah, you're working so hard! That means a lot, you know? 💛",
+      "Even when your legs give out... stand back up again. 🌟",
+      "Pain is inevitable. Suffering is optional. You've got more in you. 🌙",
+      "You don't need more motivation. You need a smaller first step. Just one thing. ✨",
+      "It's not about being the best. It's about being better than yesterday. 🔥",
+      "Being tired means you tried! That's something to feel good about 🌼",
+      "All big things come from small beginnings. The seed of every habit is a single, tiny decision. 🌱",
+    ],
+  };
+
   function openChat() {
     chatOpen = true;
     chatBubble.classList.add('visible');
@@ -964,6 +997,7 @@
     cancelAnimationFrame(typewriterRaf);
     optionTimeouts.forEach(clearTimeout);
     optionTimeouts = [];
+    clearTimeout(responseTimeout);
     chatBubble.classList.remove('visible');
     optionsPanel.classList.remove('visible');
     optionItems.forEach(item => item.classList.remove('visible'));
@@ -984,10 +1018,47 @@
   chatUI.addEventListener('click', e => e.stopPropagation());
   document.addEventListener('click', () => { if (chatOpen) closeChat(); });
 
+  let responseTimeout = null;
+
   optionItems.forEach(item => {
     item.addEventListener('click', () => {
-      // TODO: trigger character state for item.dataset.option
-      closeChat();
+      const pool = RESPONSES[item.dataset.option];
+      if (!pool) { closeChat(); return; }
+
+      const quote = pool[Math.floor(Math.random() * pool.length)];
+
+      // hide options, keep bubble open for response
+      cancelAnimationFrame(typewriterRaf);
+      optionTimeouts.forEach(clearTimeout);
+      optionTimeouts = [];
+      optionsPanel.classList.remove('visible');
+      optionItems.forEach(i => i.classList.remove('visible'));
+      bubbleText.innerHTML = '';
+
+      // typewrite the response
+      const chars = [...quote];
+      let i = 0;
+      const cursor = document.createElement('span');
+      cursor.className = 'bubble-cursor';
+      cursor.textContent = '|';
+      bubbleText.appendChild(cursor);
+
+      const CHAR_MS = 38;
+      let last = 0;
+      function typeResponse(ts) {
+        if (ts - last >= CHAR_MS) {
+          last = ts;
+          if (i < chars.length) {
+            cursor.insertAdjacentText('beforebegin', chars[i++]);
+          } else {
+            cursor.remove();
+            responseTimeout = setTimeout(closeChat, 2500);
+            return;
+          }
+        }
+        typewriterRaf = requestAnimationFrame(typeResponse);
+      }
+      typewriterRaf = requestAnimationFrame(typeResponse);
     });
   });
 </script>
