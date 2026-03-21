@@ -114,7 +114,7 @@ When a button is clicked, the character performs one of four expressive bounce a
 
 ---
 
-### 6. Load-In Jump Animation
+### 6. Load-In Jump Animation ✅ Done
 
 **What it does**
 On page load, the character does a quick excited jump to animate in — a "ta-da!" entrance rather than just appearing.
@@ -123,22 +123,30 @@ On page load, the character does a quick excited jump to animate in — a "ta-da
 - Single bounce auto-triggers on first frame
 - Float and parallax systems slightly delayed so the jump reads clearly before settling into idle drift
 
-**Technical approach**
-- Reuse existing `bounceT` / `bounceStyle` system — auto-trigger without waiting for a click
+**Technical approach (as built)**
+- `triggerBounce()` called before the first `requestAnimationFrame` — uses the existing bounce system with no extra code
+- Added `floatDelay` counter (`BOUNCE_TOTAL + 8` frames) that holds `floatT` at zero, pausing float, petal sway, and virtual light drift so the jump reads crisply before idle systems kick in
 
 ---
 
-### 7. Rotating Load-In Greeting
+### 7. Rotating Load-In Greeting ✅ Done
 
 **What it does**
 The character says a short cozy greeting on load, cycling through a few options each visit — before the user even clicks anything.
 
 **Behavior**
-- Pool of ~5 greetings in Calcifer's cozy/casual voice (i.e. "hey there 🌸", "oh, you're here! ☕", "hi hi hi 🌼", "yo! 😎", "what's cookin'? 🔥", "*ੈ✩༺hello༻*ੈ✩" )
+- Pool of ~5 greetings in Calcifer's cozy/casual voice (i.e. "hello friend! 🌸", "oh, you're here! let's gooo ☕", "hi hi hi 🌼", "yo 😎", "what's cookin'? 🔥", "*ੈ✩༺hello༻*ੈ✩" )
 - Randomly selected each load
 - Auto-triggers ~800ms after page load so the entry jump completes first
 - Typewriter animation, then bubble auto-closes — no options panel shown
 - Options only appear when user clicks the character intentionally
+
+**Technical approach (as built)**
+- `LOAD_GREETINGS` array of 6 options; one picked with `Math.random()` each load
+- `showLoadGreeting()` runs at `setTimeout(..., 800)` — after the jump lands
+- Uses the same typewriter loop as chat responses; skips `optionsPanel` entirely
+- Sets `chatOpen = true` so clicking the character during the greeting closes it cleanly; next click opens normal chat
+- Auto-closes via `responseTimeout` after 2.2s once typing finishes
 
 ---
 
