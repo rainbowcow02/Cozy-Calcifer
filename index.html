@@ -707,7 +707,7 @@
   // Saturation is kept at full to avoid dullness.
   const PARTICLE_FILTER = {
     heart: 'hue-rotate(323deg)',                  // → vivid peach/coral
-    star1: 'brightness(0.94)',                     // → bright pale yellow
+    star1: 'hue-rotate(293deg)',                   // → #F488B0 pink
     star2: 'brightness(0.82)',                     // → rich gold
     swirl: 'hue-rotate(178deg) brightness(0.88)', // → vivid periwinkle
   };
@@ -725,23 +725,23 @@
     'M167.383 28.4719C170.338 28.8148 174.246 30.3983 176.586 32.301C177.126 32.7395 177.582 33.8016 178.896 34.8804L178.304 36.0533C178.413 37.0593 178.672 36.6834 179.034 37.4465C180.242 39.2016 177.367 41.0728 177.272 41.8973C177.028 44.0272 177.292 44.3411 174.917 45.8419C169.451 49.2968 163.642 52.473 157.939 55.559C153.037 58.2111 148.257 61.3087 143.384 64.0395C139.526 66.2116 134.954 68.4609 131.265 70.8545C130.52 71.2718 129.353 71.7656 128.551 72.1348C121.89 68.6479 115.651 64.8297 122.087 56.5549C124.278 53.7387 129.419 51.3704 132.531 49.3982L153.39 36.4108C157.413 33.8634 162.622 28.998 167.383 28.4719Z',
   ];
 
-  function makeCritsSvg() {
+  function makeCritsSvg(shapeIndex, color) {
     const NS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(NS, 'svg');
     svg.setAttribute('viewBox', '0 0 213 194');
     svg.setAttribute('fill', 'none');
     svg.style.cssText = 'width:100%;height:100%;';
-    CRITS_PATHS.forEach(d => {
-      const path = document.createElementNS(NS, 'path');
-      path.setAttribute('d', d);
-      path.setAttribute('fill', CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]);
-      svg.appendChild(path);
-    });
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', CRITS_PATHS[shapeIndex]);
+    path.setAttribute('fill', color ?? CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]);
+    svg.appendChild(path);
     return svg;
   }
 
-  const MAX_PER_TYPE = 9;
+  const MAX_PER_TYPE = 10;
+  const MAX_CRITS = 10;
   const particles = [];
+
 
   function flowerCenter() {
     const wr = wrapper.getBoundingClientRect();
@@ -753,31 +753,35 @@
   }
 
   class Particle {
-    constructor(type, spawnAngle) {
+    constructor(type, spawnAngle, shapeIndex, colorIndex) {
       this.type = type;
 
       this.angle     = spawnAngle ?? Math.random() * Math.PI * 2;
-      this.orbitR    = 165 + Math.random() * 90;
-      this.speed     = (0.005 + Math.random() * 0.011) * (Math.random() > .5 ? 1 : -1);
+      this.orbitR    = 165 + Math.random() * 70;
+      this.speed     = type === 'crits'
+        ? (0.003 + Math.random() * 0.005) * (Math.random() > .5 ? 1 : -1)
+        : (0.005 + Math.random() * 0.011) * (Math.random() > .5 ? 1 : -1);
 
       this.wobble    = Math.random() * Math.PI * 2;
       this.wobbleHz  = 0.016 + Math.random() * 0.026;
-      this.wobbleAmp = 12  + Math.random() * 22;
+      this.wobbleAmp = type === 'crits' ? 8 + Math.random() * 12 : 12 + Math.random() * 22;
 
       this.drift     = Math.random() * Math.PI * 2;
       this.driftHz   = 0.011 + Math.random() * 0.017;
       this.driftAmp  = 8   + Math.random() * 16;
 
       this.spin      = Math.random() * 360;
-      this.spinRate  = (0.5 + Math.random() * 2.5) * (Math.random() > .5 ? 1 : -1);
+      this.spinRate  = type === 'crits'
+        ? (0.1 + Math.random() * 0.6) * (Math.random() > .5 ? 1 : -1)
+        : (0.5 + Math.random() * 2.5) * (Math.random() > .5 ? 1 : -1);
 
       this.scalePhase = Math.random() * Math.PI * 2;
       this.scaleHz    = 0.020 + Math.random() * 0.022;
-      this.scaleMid   = 0.78  + Math.random() * 0.28;
-      this.scaleAmp   = 0.10  + Math.random() * 0.13;
+      this.scaleMid   = type === 'crits' ? 0.88 + Math.random() * 0.14 : 0.78 + Math.random() * 0.28;
+      this.scaleAmp   = type === 'crits' ? 0.04 + Math.random() * 0.05 : 0.10 + Math.random() * 0.13;
 
       this.opacity = 0;
-      this.size    = 26 + Math.random() * 20;
+      this.size    = type === 'crits' ? 52 + Math.random() * 20 : 26 + Math.random() * 20;
 
       this.el = document.createElement('div');
       this.el.className = 'particle';
@@ -785,7 +789,9 @@
       this.el.style.height = `${this.size}px`;
 
       if (type === 'crits') {
-        this.el.appendChild(makeCritsSvg());
+        const idx = shapeIndex ?? Math.floor(Math.random() * CRITS_PATHS.length);
+        const color = colorIndex != null ? CONFETTI_COLORS[colorIndex] : undefined;
+        this.el.appendChild(makeCritsSvg(idx, color));
       } else {
         const img = document.createElement('img');
         img.src = ICON_SRC[type];
@@ -830,16 +836,32 @@
   function spawnParticles(type) {
     const existing = particles.filter(p => p.type === type && !p.dying);
 
-    if (existing.length >= MAX_PER_TYPE) {
+    const max = type === 'crits' ? MAX_CRITS : MAX_PER_TYPE;
+    if (existing.length >= max) {
       const trim = existing.slice(0, 2);
       trim.forEach(p => { p.dying = true; });
     }
 
-    const count  = 2 + Math.floor(Math.random() * 2);
+    const count  = type === 'crits' ? 4 + Math.floor(Math.random() * 3) : 3 + Math.floor(Math.random() * 2);
     const offset = Math.random() * Math.PI * 2;
+
+    // For crits: guarantee one of each shape and each color, then fill remainder randomly
+    const shapeQueue = type === 'crits'
+      ? [...[0,1,2,3].sort(() => Math.random() - 0.5)]
+      : [];
+    const colorQueue = type === 'crits'
+      ? [...[0,1,2,3,4,5].sort(() => Math.random() - 0.5)]
+      : [];
+
     for (let i = 0; i < count; i++) {
       const angle = offset + (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.6;
-      particles.push(new Particle(type, angle));
+      const shapeIndex = type === 'crits'
+        ? (shapeQueue.length > 0 ? shapeQueue.shift() : Math.floor(Math.random() * CRITS_PATHS.length))
+        : undefined;
+      const colorIndex = type === 'crits'
+        ? (colorQueue.length > 0 ? colorQueue.shift() : Math.floor(Math.random() * CONFETTI_COLORS.length))
+        : undefined;
+      particles.push(new Particle(type, angle, shapeIndex, colorIndex));
     }
   }
 

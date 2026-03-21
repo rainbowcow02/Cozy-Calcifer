@@ -182,7 +182,7 @@ Each particle type gets a thematic color from the design palette, tinting the or
 | Particle | Color | Palette var |
 |----------|-------|-------------|
 | Heart | Peach/coral | `#F4A896` |
-| Star1 | Pale yellow | `#F5D878` |
+| Star1 | Pink | `#F488B0` |
 | Star2 | Rich gold | `#F0C040` |
 | Swirl | Periwinkle | `#7B8FD6` |
 | Crits | Confetti (random per shape) | `#7B8FD6`, `#F4A896`, `#F5D878`, `#F0C040`, `#C4C8DC`, `#9AA5D8` |
@@ -190,22 +190,23 @@ Each particle type gets a thematic color from the design palette, tinting the or
 **Technical approach (as built)**
 - All particle SVGs share a pale-yellow base fill (`#FEE69A`)
 - Color is applied via CSS `filter` on each `<img>`: `hue-rotate()` shifts hue, `brightness()` adjusts lightness
-- `PARTICLE_FILTER` map: heart `hue-rotate(323deg)`, star1 `brightness(0.94)`, star2 `brightness(0.82)`, swirl `hue-rotate(178deg) brightness(0.88)`
-- Crits particles are dynamically built SVGs — each of the 4 shapes gets a random color from `CONFETTI_COLORS` on every spawn, creating a confetti effect
+- `PARTICLE_FILTER` map: heart `hue-rotate(323deg)`, star1 `hue-rotate(293deg)` (→ `#F488B0`), star2 `brightness(0.82)`, swirl `hue-rotate(178deg) brightness(0.88)`
+- Crits are dynamically built SVGs — each particle is a single shape with one palette color; every spawn batch guarantees all 4 shapes and all 6 colors appear
 
 ---
 
-### 10. Star Color Differentiation
+### 10. Star Color Differentiation ✅ Done
 
 **What it does**
 Star1 and star2 are currently too similar in color. Make them visually distinct so each feels like its own type.
 
 **Behavior**
-- Star1: brighter, cooler — white-yellow or light blue/silver shimmer
-- Star2: warmer, richer — amber or orange-gold
+- Star1: pink — distinct and soft against the other types
+- Star2: warmer, richer — gold
 
-**Technical approach**
-- Adjust `hue-rotate` and `brightness` filter values for `star1` and `star2` in `PARTICLE_FILTER`
+**Technical approach (as built)**
+- Star1: `hue-rotate(293deg)` → `#F488B0` pink
+- Star2: `brightness(0.82)` → rich gold
 
 ---
 
@@ -246,19 +247,21 @@ Particles have a finite lifespan — they appear, orbit for a while, then gently
 
 ---
 
-### 13. Confetti Independent Movement (Galaxy Cluster)
+### 13. Confetti Individual Particles ✅ Done
 
 **What it does**
-The confetti cluster becomes its own little universe — the cluster as a whole orbits the flower, and inside it, individual pieces swirl around independently like planets in the abyss.
+Each confetti crit is its own independent particle — a single shape orbiting the character with its own path, color, and motion. Light, magical, like a dusting of sparkles.
 
 **Behavior**
-- The cluster center orbits the flower as a whole (slow, drifting)
-- Each confetti piece orbits/wanders within the cluster with its own angle, radius, and speed
-- The overall system drifts around the character while individual pieces stay alive and in motion
+- Each particle is one shape (box, X, circle, or dash) with one palette color
+- Every spawn batch guarantees all 4 shapes and all 6 palette colors appear
+- Particles orbit at the same range as other types but move slower and tumble lazily
+- Spawns 4–6 per click; max 10 active at a time (eldest marked dying when cap is exceeded)
 
-**Technical approach**
-- Two-level motion: cluster center position (relative to flower) + per-particle position (relative to cluster center)
-- Each `crits` particle stores its own cluster-relative orbital params
+**Technical approach (as built)**
+- `makeCritsSvg(shapeIndex, color)` builds a single-path SVG per particle
+- `spawnParticles` builds a shuffled `shapeQueue` [0–3] and `colorQueue` [0–5]; first particles consume the queues, extras pick randomly
+- Crits-specific params: orbit 165–235px, speed `0.003–0.008`, wobble amp 8–20px, spin `0.1–0.7°/frame`, size 52–72px, scale pulse `±0.04–0.09`
 
 ---
 
