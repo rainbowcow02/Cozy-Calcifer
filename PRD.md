@@ -46,18 +46,27 @@ Buttons visually reflect whether their particle type is currently active (partic
 
 ---
 
-### 3. Shadow + Highlight Dynamic Movement
+### 3. Shadow + Highlight Dynamic Movement ✅ Done
 
 **What it does**
 The body's shadow and highlight layers have their own sense of movement — subtle independent drift in the idle state, and enhanced physical reaction during jumps and spins.
 
 **Behavior**
-- Idle: each layer has a slow drift of its own (sin/cos oscillation layered on top of mouse parallax), using different frequencies so shadow and highlight feel independent
-- During bounce: shadow layers compress on landing, highlights streak on launch — reinforcing the physical weight of the animation
+- Idle: each layer drifts with the virtual light source (two overlapping sine waves, ~90s non-repeating orbit) and follows cursor parallax — shadows flee the light, highlights chase it
+- During bounce: shadows and highlights behave with distinct physical weight across all 4 bounce phases
 
-**Technical approach**
-- Add per-layer oscillation to the parallax update loop using `floatT` at slow, distinct frequencies
-- Read `bounceT` state to scale the shadow/highlight offset during active bounces
+**Technical approach (as built)**
+- Virtual light source orbits the character using two overlapping sine waves at distinct frequencies — creates organic, non-repeating motion
+- 5 parallax layers (2 shadow, 1 accent, 2 highlight) each have unique `cursor`, `light`, `bloom`, and `wrap` values
+- `getBounceScale()` now returns `phase` (1–4), `phaseP` (0–1 eased progress), and `bdir` (lean direction) for phase-aware behavior
+- **Inertia lag:** shadows lerp at 0.025 (heavy/slow), highlights at 0.38 (light/snappy) — the gap between them sells the sense of mass
+- **Phase 1 (squish):** shadow balloons outward 60%, highlight compresses 30%
+- **Phase 2 (airtime):** shadow shrinks 22% (body lifts away), highlight blooms 18%
+- **Phase 3 (landing):** shadow slams back and overshoots, highlight bounces back from 118% → 104%
+- **Phase 4 (spring):** both layers settle toward neutral with a residual overshoot
+- **Lateral drift:** during lean bounces, shadow drifts in lean direction, highlight pulls away (opposite)
+- **Landing flash:** 10-frame highlight scale spike fires on phase 2→3 transition — reads as a pulse of light on impact
+- `wrapRot` tilts each layer to conform to the sphere surface (shadows and highlights tilt opposite directions)
 
 ---
 
@@ -192,20 +201,23 @@ Star1 and star2 are currently too similar in color. Make them visually distinct 
 
 ---
 
-### 11. Petal Independent Wobble
+### 11. Petal Independent Wobble ✅ Done
 
 **What it does**
 The petals (scalloped edge layer) oscillate on their own slow frequency, as if catching a gentle breeze independently of the body.
 
 **Behavior**
-- Subtle rotation (±1.8°) and slight horizontal squeeze (±0.8%)
-- ~5.2-second period — slower and distinct from the ~3.5s body float
+- Subtle rotation (±1.8°) on a dual-frequency sway — two overlapping sine waves so motion never feels mechanical
+- Petals lean slightly toward the cursor (bias added to sway center)
+- Subtle parallax shift opposite to cursor — petals feel like they sit on a slightly deeper plane
+- Slow breath scale pulse (~75s period) layered on top
 - Always running in the background; most noticeable at rest
 
-**Technical approach**
-- Apply `rotate` + `scaleX` oscillation to the `bodyscalop` image element directly
-- Use `breathT * 0.0121` for the period (reuses existing counter, different multiplier)
-- `transform-origin: center` so the petal fans naturally from the center
+**Technical approach (as built)**
+- Petal layers grouped in `#petal-group` div with `transform-origin: 50% 78%` so sway pivots near the base
+- `petalSway = sin(floatT * 0.018) * 1.8 + sin(floatT * 0.011) * 0.9 + swayBias` — dual-frequency rock with cursor lean
+- `petalParX/Y = -lerpX/Y * 0.07` — subtle parallax shift opposite to cursor for depth illusion
+- `petalBreath = 1 + sin(floatT * 0.0133 + π * 0.7) * 0.022` — slow scale pulse desynced from body float
 
 ---
 
