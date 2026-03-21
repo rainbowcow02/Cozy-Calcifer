@@ -134,7 +134,7 @@ On page load, the character does a quick excited jump to animate in — a "ta-da
 The character says a short cozy greeting on load, cycling through a few options each visit — before the user even clicks anything.
 
 **Behavior**
-- Pool of ~5 greetings in Calcifer's cozy/casual voice (i.e. "hey there 🌸", "oh, you're here! ☕", "hi hi hi 🌼", "yo! 😎", "what's cookin'? 🔥" )
+- Pool of ~5 greetings in Calcifer's cozy/casual voice (i.e. "hey there 🌸", "oh, you're here! ☕", "hi hi hi 🌼", "yo! 😎", "what's cookin'? 🔥", "*ੈ✩༺hello༻*ੈ✩" )
 - Randomly selected each load
 - Auto-triggers ~800ms after page load so the entry jump completes first
 - Typewriter animation, then bubble auto-closes — no options panel shown

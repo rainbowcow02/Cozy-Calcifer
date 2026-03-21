@@ -598,6 +598,9 @@
   let bounceStyleIdx = 0;
   let bounceStyle    = 'right';
 
+  // Hold float/petal/light animations for the first N frames so the load-in jump reads clearly
+  let floatDelay = BOUNCE_TOTAL + 8;
+
   function triggerBounce() {
     bounceStyle    = BOUNCE_STYLES[bounceStyleIdx % 4];
     bounceStyleIdx++;
@@ -863,7 +866,8 @@
     lerpY += (mouseY - lerpY) * LERP;
 
     // ── Flower hover + cursor drift ──────────────────────────
-    floatT++;
+    // Hold float during load-in so the entrance jump reads clearly first
+    if (floatDelay > 0) { floatDelay--; } else { floatT++; }
     // two overlapping sines → organic float (~3.5s + ~5.5s periods)
     const floatY = Math.sin(floatT * 0.030) * 14 + Math.sin(floatT * 0.019) * 5;
     const floatX = Math.sin(floatT * 0.022) *  3  + Math.sin(floatT * 0.013) * 1.5;
@@ -1019,6 +1023,7 @@
     }
     requestAnimationFrame(loop);
   }
+  triggerBounce(); // load-in entrance jump — fires before first frame
   loop();
 
   /* ── Chat UI ─────────────────────────────────────────── */
@@ -1194,6 +1199,53 @@
       }, 280);
     });
   });
+
+  /* ── Load-in greeting ────────────────────────────────── */
+  const LOAD_GREETINGS = [
+    "hey there 🌸",
+    "oh, you're here! ☕",
+    "hi hi hi 🌼",
+    "yo! 😎",
+    "what's cookin'? 🔥",
+    "*ੈ✩༺hello༻✩ੈ*",
+  ];
+
+  function showLoadGreeting() {
+    if (chatOpen) return; // user already clicked — don't interrupt
+
+    chatOpen = true;
+    const greeting = LOAD_GREETINGS[Math.floor(Math.random() * LOAD_GREETINGS.length)];
+
+    chatBubble.classList.add('visible');
+    bubbleText.innerHTML = '';
+
+    const chars  = [...greeting];
+    let   i      = 0;
+    const cursor = document.createElement('span');
+    cursor.className  = 'bubble-cursor';
+    cursor.textContent = '|';
+    bubbleText.appendChild(cursor);
+
+    const CHAR_MS = 45;
+    let last = 0;
+
+    function typeFrame(ts) {
+      if (ts - last >= CHAR_MS) {
+        last = ts;
+        if (i < chars.length) {
+          cursor.insertAdjacentText('beforebegin', chars[i++]);
+        } else {
+          cursor.remove();
+          responseTimeout = setTimeout(closeChat, 2200);
+          return;
+        }
+      }
+      typewriterRaf = requestAnimationFrame(typeFrame);
+    }
+    typewriterRaf = requestAnimationFrame(typeFrame);
+  }
+
+  setTimeout(showLoadGreeting, 800);
 </script>
 </body>
 </html>
