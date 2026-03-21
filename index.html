@@ -373,7 +373,7 @@
 
       <!-- ── flower petals (bottom group) ── -->
 
-      <img src="assets/Cozy_Vibe-bodyscalop 1 [Vectorized].svg"
+      <img id="layer-scalop" src="assets/Cozy_Vibe-bodyscalop 1 [Vectorized].svg"
            style="left:14.5px;top:0;width:506px;height:520px;opacity:0.29;" alt="">
 
       <img src="assets/Cozy_Vibe-bodyhighlight 1 [Vectorized].svg"
@@ -382,7 +382,7 @@
       <img src="assets/Cozy_Vibe-bodydimension 1 [Vectorized].svg"
            style="left:22px;top:17.5px;width:491px;height:485px;opacity:0.26;" alt="">
 
-      <img src="assets/Cozy_Vibe-outline 1 [Vectorized].svg"
+      <img id="layer-outline" src="assets/Cozy_Vibe-outline 1 [Vectorized].svg"
            style="left:0;top:0;width:535px;height:520px;opacity:0.61;" alt="">
 
       <!-- ── body group — clipped to bodybase shape ── -->
@@ -524,23 +524,25 @@
 </div>
 
 <script>
-  const overlay   = document.getElementById('particle-overlay');
-  const faceEl    = document.getElementById('flower-face');
-  const faceGroup = document.getElementById('face-group');
-  const bodyGroup = document.getElementById('body-group');
-  const scene     = document.getElementById('scene');
-  const wrapper   = document.getElementById('flower-wrapper');
-  const eyeSlice  = document.getElementById('eye-slice');
+  const overlay     = document.getElementById('particle-overlay');
+  const faceEl      = document.getElementById('flower-face');
+  const faceGroup   = document.getElementById('face-group');
+  const bodyGroup   = document.getElementById('body-group');
+  const scene       = document.getElementById('scene');
+  const wrapper     = document.getElementById('flower-wrapper');
+  const eyeSlice    = document.getElementById('eye-slice');
 
   /* ── Parallax shadow/highlight layers ───────────────────
-     Factors are in flower-inner local space (×0.6 on screen).
-     Shadows drift away from the cursor; highlights toward it. */
+     cursor: how much the mouse parallax moves this layer (depth illusion).
+     light:  how much the virtual light source moves this layer.
+             positive = highlight (follows the light),
+             negative = shadow (flees the light, appears on opposite side). */
   const PARALLAX = [
-    { el: document.getElementById('layer-shadow-shadow'),     factor: -0.26  },
-    { el: document.getElementById('layer-shadow-colorburn'),  factor: -0.18  },
-    { el: document.getElementById('layer-boldaccent'),        factor: -0.14  },
-    { el: document.getElementById('layer-highlight-overlay'), factor:  0.20  },
-    { el: document.getElementById('layer-highlight-screen'),  factor:  0.28  },
+    { el: document.getElementById('layer-shadow-shadow'),     cursor: -0.26, light: -0.80, wrap: 1.0 },
+    { el: document.getElementById('layer-shadow-colorburn'),  cursor: -0.18, light: -0.58, wrap: 0.65 },
+    { el: document.getElementById('layer-boldaccent'),        cursor: -0.14, light: -0.40, wrap: 0.35 },
+    { el: document.getElementById('layer-highlight-overlay'), cursor:  0.20, light:  0.52, bloom: 0.28,  wrap: 0.5 },
+    { el: document.getElementById('layer-highlight-screen'),  cursor:  0.28, light:  0.75, bloom: -0.32, wrap: 0.9 },
   ];
   const LERP = 0.055;
   let mouseX = 0, mouseY = 0; // target: mouse offset from flower center (screen px)
@@ -840,11 +842,6 @@
     lerpX += (mouseX - lerpX) * LERP;
     lerpY += (mouseY - lerpY) * LERP;
 
-    // apply parallax to shadow/highlight layers
-    for (const { el, factor } of PARALLAX) {
-      el.style.transform = `translate(${lerpX * factor}px, ${lerpY * factor}px)`;
-    }
-
     // ── Flower hover + cursor drift ──────────────────────────
     floatT++;
     // two overlapping sines → organic float (~3.5s + ~5.5s periods)
@@ -864,8 +861,40 @@
     const bounce = getBounceScale();
     faceOffY += (bounce.dy - faceOffY) * 0.2; // lerp face toward body position
     const faceLagY = faceOffY - bounce.dy;     // residual: face is still "behind" body
+
+    // ── Breathing pulse — slow inhale/exhale, desynced from float by π/3 ────
+    const breathScale = 1 + 0.04 * Math.sin(floatT * 0.0157 + Math.PI / 3);
+    const bsx = (bounce.sx * breathScale).toFixed(4);
+    const bsy = (bounce.sy * breathScale).toFixed(4);
     const vertCenter = isMobile ? '' : 'translateY(-50%) ';
-    wrapper.style.transform = `${vertCenter}translate(${flowerOffX}px, ${flowerOffY + bounce.dy}px) rotate(${tilt + bounce.rot}deg) scale(${bounce.sx.toFixed(4)}, ${bounce.sy.toFixed(4)})`;
+    wrapper.style.transform = `${vertCenter}translate(${flowerOffX}px, ${flowerOffY + bounce.dy}px) rotate(${tilt + bounce.rot}deg) scale(${bsx}, ${bsy})`;
+
+    // ── Virtual light source: slow organic orbit around the character ────────
+    // Two overlapping waves give a wandering, non-repeating path (~90s before it loops)
+    const lightX = Math.sin(floatT * 0.0070) * 40 + Math.sin(floatT * 0.0113) * 16;
+    const lightY = Math.cos(floatT * 0.0058) * 32 + Math.cos(floatT * 0.0137) * 13;
+
+    // ── Light obliqueness: how far the light has swung from center (0–1) ─────
+    // Used to scale layers — oblique light = bigger shadows, blooming highlights
+    const lightMag  = Math.sqrt(lightX * lightX + lightY * lightY);
+    const lightNorm = Math.min(lightMag / 55, 1);
+
+    // ── Apply to each layer: highlights chase the light, shadows flee it ─────
+    for (const { el, cursor, light, bloom = 0, wrap = 0 } of PARALLAX) {
+      const x = lightX * light + lerpX * cursor;
+      const y = lightY * light + lerpY * cursor;
+      const bounceY = light < 0 ? bounce.dy * 0.13 : bounce.dy * -0.09;
+      // shadows: small under direct light (noon), large under oblique (sunset)
+      // highlights: bloom or shrink per-layer — specular tightens, diffuse spreads
+      const sc = (light < 0
+        ? 0.82 + lightNorm * 0.40     // shadow: 82% → 122%
+        : 1 + lightNorm * bloom       // highlight: diffuse +28%, specular −32%
+      ).toFixed(4);
+      // wrap: rotate to conform to the sphere surface — shadows tilt one way,
+      // highlights the other, since they sit on opposite sides of the curve
+      const wrapRot = (lightX / 55 * 12 + lightY / 45 * 5) * wrap * Math.sign(light);
+      el.style.transform = `translate(${x}px, ${y + bounceY}px) rotate(${wrapRot.toFixed(2)}deg) scale(${sc})`;
+    }
 
     // ── Body 3D tilt — shadows/highlights wrap the form ──────
     const BODY_MAX_TILT = 22;
